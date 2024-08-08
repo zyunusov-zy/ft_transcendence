@@ -1,0 +1,766 @@
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+    font-family: "Anta", sans-serif;
+}
+
+#content, .signupP {
+    background-color: #131426 !important;
+}
+
+.signupP{
+    margin: 0 !important;
+}
+
+.box-login, .box-signup, .box-reset {
+    background: #C33149;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 400px; 
+    height: 85%;
+    box-shadow: 0px 0px 20px 15px #C33149;
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.logo {
+    max-height: 140px;
+    max-width: 140px;
+}
+
+.form-login, .form-signup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 10px;
+}
+
+.form-login>input, .form-signup>input, .signupTop>input {
+    width: 100%;
+    height: 100%;
+    height: 40px;
+    font-size: 20px;
+    padding: 10px;
+}
+
+.form-login>input::placeholder, .form-signup>input::placeholder, .signupTop>input::placeholder {
+    font-size: 20px;
+}
+
+.form-login>button, .form-signup>button, .link42 {
+    background-color: #100C4F;
+    width: 60%;
+    padding: 10px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.form-login>button:hover, .form-signup>button:hover, .link42 {
+    background-color: #0D0A3A;
+}
+
+
+.link42{
+    color: white;
+}
+
+.form-login>a {
+    text-decoration: none;
+    color: #100C4F;
+    border-bottom: 2px dotted #100C4F;
+}
+
+.login-footer {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+}
+
+.footer-span {
+    color: #100C4F;
+    padding-right: 20px;
+}
+
+.login-footer > a:first-child {
+    text-decoration: none;
+    color: black;
+    font-weight: 600;
+}
+
+
+/* Sign Up Styles */
+
+.signupTop {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 1.5em;
+    height: 100%;
+}
+
+#preview-container {
+    width: 250px;
+    height: 120px;
+    overflow: hidden;
+}
+
+#preview-container img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+/* Main page */
+
+.main-page{
+    color: white;
+}
+
+.main
+{
+    width: 80%;
+    background-color: #100c4ffa;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+}
+
+.side-bar{
+    background-color: #131426 !important;
+    width: 20%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-top{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    border-bottom: 2px solid #ccc;
+    background-color: #C33149;
+    color: #100C4F;
+}
+
+.side-info, .game-info
+{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 25%;
+}
+
+.game-info
+{
+    width: 50%;
+}
+
+.person-info {
+    width: 40%;
+    margin: 5px 1em 5px 2em;
+    border-radius: 1em;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    padding-right: 1em;
+    gap: 2.5em;
+    flex-wrap: wrap;
+}
+
+.person-info > img
+{
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    background-color: white;
+}
+
+.player-status
+{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    gap: 5px;
+}
+
+.player-status h5 {
+    margin-right: 1em;
+    color: white;
+}
+
+.player-status button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem; /* Smaller font size */
+    display: flex;
+    align-items: center;
+    color: black;
+    font-size: 14px;
+    width: 120px;
+    height: 30px;
+    background-color: white;
+    border-radius: 10px;
+}
+
+.player-status button:hover
+{
+    background-color: #C33149;
+    color: white;
+}
+
+.player-status svg
+{
+    width: 1.5em;
+    height: 1.5em;
+    vertical-align: middle;
+    margin-left: 5px;
+    fill: black;
+
+}
+
+.status-dropdown {
+    position: relative;
+}
+
+.status-dropdown span
+{
+    border: 1px solid black;
+    padding: 2px 5px 2px 5px;
+    border-radius: 10px;
+    background-color: white;
+    color: black;
+    font-weight: 600;
+}
+
+.status-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    min-width: 70px;
+    z-index: 1;
+    border-radius: 10px;
+}
+
+.status-dropdown:hover .status-dropdown-content {
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+}
+
+.status-dropdown  a
+{
+    display: flex;
+    flex-direction: row;
+    color: white;
+    margin-right: 10px;
+    align-items: center;
+    transition: color 0.3s;
+}
+
+.status-dropdown a:hover
+{
+    color:#C33149;
+}
+
+.status-dropdown svg
+{
+    width: 15px;
+    height: 15px;
+    margin-left: 5px;
+}
+
+
+
+.sign-out{
+    padding-top: 2em;
+    padding-left: 1em;
+    width: 5%;
+}
+
+.sign-out > svg
+{
+    width: 40px;
+    height: 40px;
+}
+
+.side-info > h1, .game-info > h1
+{
+    padding-left: 10px;
+    font-weight: 900;
+}
+
+.side-links, .game-links
+{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding-left: 10px;
+}
+
+.side-links
+{
+    border-bottom: 2px solid #ccc;
+}
+
+.side-links > a, .game-links > a{
+    color: white;
+    padding-bottom: 5px;
+    font-weight: 600;
+}
+
+.game-links > a {
+    color: #100C4F;
+}
+
+.game-links > a 
+{
+    letter-spacing: 1px;
+}
+
+
+
+.friends-box, .chats-box, .request-box
+{
+    display: flex;
+    flex-wrap: wrap;
+    height: 100%;
+    padding: 0px 20px 0px 20px;
+    width: 100%;
+    justify-content: center;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.chats-box, .request-box
+{
+    display: none;
+}
+
+.friends-box > a {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    border: 2px solid white;
+    height: 50px;
+    width: 100%;
+    overflow: hidden;
+    transition: border-color 0.3s, color 0.3s;
+    margin-bottom: 1em;
+}
+
+.friends-box > a:hover {
+    border-color: grey;
+    color: grey;
+}
+
+.friends-box > a .effect {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 50%; 
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: width 0.3s, height 0.3s, opacity 0.3s;
+}
+
+
+.play-box
+{
+    margin: 2em;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 1em;
+}
+
+.play-box > a {
+    background-color: #87CEEB;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #100C4F;
+    font-size: 32px;
+    width: 25%;
+    overflow: hidden;
+    transition: border-color 0.3s, color 0.3s;
+    padding: 5px;
+}
+
+.play-box > a:hover {
+    color: #C33149;
+}
+
+.play-box > a .effect {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 50%; 
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: 0;
+    transition: width 0.3s, height 0.3s, opacity 0.3s;
+}
+
+.history-box
+{
+    display: none;
+    margin: 2em;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    height: 100%;
+    flex-direction: column;
+    border-radius: 1em;
+    padding: 1em;
+    overflow-y: auto;
+    scrollbar-width: none; /* Set a thin scrollbar */
+    height: 100%;
+}
+
+.overlay, .overlay-play
+{
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+
+.add-friend-box, .friends-list-box
+{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 25px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.friends-list-box
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: #100C4F;
+}
+
+.friends-list
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    background-color: #100C4F;
+    width: 100%;
+}
+
+#friendName
+{
+    width: 100%;
+}
+
+#addFriendButton
+{
+    width: 100%;
+}
+
+.close-icon , .close-icon-play{
+    position: absolute;
+    top: 0;
+    right: 0;
+    cursor: pointer;
+    margin: 5px;
+}
+
+.list-friends
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.friend-mini-box
+{
+    display: flex;
+    width: 100%;
+    height: 2.5rem;
+    text-decoration: none;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 1rem;
+    cursor: pointer;
+    color: white;
+}
+
+.friend-mini-box:hover
+{
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.error-message {
+    margin-top: 1em;
+    font-size: 18px;
+    padding: 5px;
+    width: 100%;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+}
+
+
+/* Edit Profile */
+
+/* Modal styles */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    padding-top: 100px; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5); 
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 5px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+/* CHat */
+.chat-icon {
+    cursor: pointer;
+    font-size: 1.2em;
+    margin-left: 10px;
+}
+
+.chat-box {
+    display: none;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 10px;
+    width: 300px;
+}
+
+.chat-box.active {
+    display: block;
+}
+
+.messages {
+    color: white;
+    height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+
+.message {
+    color: white;
+    margin-bottom: 5px;
+}
+
+
+/* Game */
+
+#friendsList {
+    color: white;
+    list-style-type: none; /* Remove bullet points */
+    padding: 0;
+    margin: 0;
+}
+
+#friendsList li {
+    background-color: #131426;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#friendsList li:hover {
+    background-color: #2e2f42;
+}
+
+#PlayWithFriendButton {
+    display: inline-block;
+    padding: 10px 20px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+#PlayWithFriendButton:hover {
+    background-color: #2e2f42;
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.popup-header button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.popup-header button:hover {
+    color: #ff6b6b;
+}
+
+#overlayF {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9998;
+}
+
+/* Popup container styles */
+#popupContainer {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1c1e26;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+/* Game Request */
+#gameRequestOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Background shadow */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* Ensures the overlay is on top */
+}
+
+#gameRequestContainer {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#scoreboard {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 80%; /* Make the scoreboard a bit smaller */
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+    color: white; /* Text color */
+    padding: 5px 0; /* Less padding to make it smaller */
+    z-index: 1000; /* Ensure it is on top of other elements */
+}
+
+#player1, #player2 {
+    flex: 1;
+    text-align: center;
+}
+
+#score-center {
+    flex: 2; /* Take more space for the center score */
+    text-align: center;
+    font-size: 2em; /* Make score bigger */
+}
+
+#player1-name, #player2-name {
+    font-size: 1.5em; /* Make nickname size */
+}
+
+#gameCon {
+    display: none;
+    position: relative; /* Ensure gameCon is positioned relative for absolute positioning of scoreboard */
+    width: 100%;
+    height: 100vh; /* Full height for demonstration */
+    overflow: hidden; /* Prevent overflow */
+}

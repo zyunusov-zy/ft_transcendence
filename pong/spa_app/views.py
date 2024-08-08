@@ -1,0 +1,440 @@
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.views import View
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.utils.http import urlsafe_base64_encode,  urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from .models import UserProfile, Message, FriendRequest, Friendship
+import re
+import os 
+from django.conf import settings
+from django.contrib.auth import logout, authenticate, login as auth_login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.crypto import get_random_string
+from django.contrib.auth.hashers import make_password
+from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+import json
+from django.shortcuts import get_object_or_404
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+class BaseTemplateView(View):
+    template_name = 'base.html'
+
+    def get(self, request, *args, **kwargs):
+        context = kwargs.get('context', {})
+        return render(request, self.template_name, context)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LoginView(View):
+
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if user.is_active:
+                try:
+                    profile = user.userprofile
+                except UserProfile.DoesNotExist:
+                    profile = None
+
+                if profile and profile.email_verified:
+                    auth_login(request, user)
+                    return JsonResponse({'success': True})
+                elif profile and not profile.email_verified:
+                    return JsonResponse({'success': False, 'errors': 'Your email is not verified. Please check your email to activate your account.'})
+                else:
+                    return JsonResponse({'success': False, 'errors': 'Error logging in. Please contact support for assistance.'})
+            else:
+                return JsonResponse({'success': False, 'errors': 'Your account is inactive. Please contact support for assistance.'})
+        else:
+            return JsonResponse({'success': False, 'errors': 'Invalid username or password'})
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        print("working")
+        csrf_token = get_token(request)
+        return JsonResponse({'csrfToken': csrf_token})
+
+class SignupView(View):
+
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        print("post signup")
+        username = request.POST.get('usernamesignup')
+        email = request.POST.get('emailsignup')
+        password = request.POST.get('passwordsignup')
+
+        # Password policy
+        if not re.findall('[A-Z]', password) or not re.findall('[0-9]', password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', password):
+            return JsonResponse({'success': False, 'errors': 'Password must contain at least one uppercase letter, one digit, one symbol.'})
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'errors': 'Username already exists. Please choose a different one.'})
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'errors': 'Email address already exists. Please use a different one.'})
+
+        try:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            UserProfile.objects.create(user=user)
+
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            verification_link = request.build_absolute_uri(reverse('email_verify', args=[uid, token]))
+
+            send_mail(
+                'Verify your email for our awesome site',
+                f'Please click the following link to verify your email address: {verification_link}',
+                'pon42',  # need to change
+                [email],
+                fail_silently=False,
+            )
+            return JsonResponse({'success': True, 'message': 'Verification email sent. Please check your email to verify your account.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'errors': str(e)})
+
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        print("get signup")
+        csrf_token = get_token(request)
+        return JsonResponse({'csrfToken': csrf_token})
+
+class FetchCSRFTokenView(View):
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        csrf_token = get_token(request)
+        return JsonResponse({'csrfToken': csrf_token})
+    
+class VerifyEmailView(View):
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return redirect(f'/?verification=failed&uidb64={uidb64}&token={token}#login')
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            user.userprofile.email_verified = True
+            user.userprofile.save()
+            return redirect(f'/?verification=success&uidb64={uidb64}&token={token}#login')
+        else:
+            return redirect(f'/?verification=failed&uidb64={uidb64}&token={token}#login')
+
+
+class UserDataView(LoginRequiredMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            profile = user.userprofile
+        except UserProfile.DoesNotExist:
+            profile = None
+
+        data = {
+            'nickname': profile.nickname if profile and profile.nickname else user.username,
+            'avatar': profile.profile_picture.url if profile and profile.profile_picture else '/static/img/avatar.jpg',
+        }
+        return JsonResponse(data)
+
+class PasswordResetView(View):
+    def post(self, request, *args, **kwargs):
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+
+        print(username)
+        print(email)
+        try:
+            user = User.objects.get(username=username, email=email)
+
+            if not user.userprofile.email_verified:
+                return JsonResponse({'success': False, 'error': 'Email not verified.'})
+            token = get_random_string(length=32)
+            
+            # Store the token in the user's profile or another appropriate model
+            user.userprofile.reset_token = token
+            user.userprofile.save()
+
+            # Generate the reset link with the hash fragment
+            reset_url = request.build_absolute_uri('/') + f'#setnewpass?token={token}'
+            send_mail(
+                'Password Reset',
+                f'Click the link to reset your password: {reset_url}',
+                'no-reply@example.com',
+                [email],
+                fail_silently=False,
+            )
+            return JsonResponse({'success': True, 'message': 'Password reset email sent.'})
+
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid username or email.'})
+    
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        print("working")
+        csrf_token = get_token(request)
+        return JsonResponse({'csrfToken': csrf_token})
+
+class ValidateTokenView(View):
+    def get(self, request, *args, **kwargs):
+        token = request.GET.get('token')
+        print(token)
+        if not token:
+            return JsonResponse({'valid': False, 'error': 'No token provided'})
+
+        try:
+            profile = UserProfile.objects.get(reset_token=token)
+            return JsonResponse({'valid': True})
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'valid': False, 'error': 'Invalid token'})
+
+
+class SetNewPasswordView(View):
+
+    @method_decorator(csrf_protect)
+    def post(self, request, *args, **kwargs):
+        token = request.POST.get('token')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not token or not new_password or not confirm_password:
+            return JsonResponse({'success': False, 'error': 'Token, new password, and confirmation are required.'})
+
+        if new_password != confirm_password:
+            return JsonResponse({'success': False, 'error': 'Passwords do not match.'})
+
+        if len(new_password) < 8:
+            return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters long.'})
+        
+        if not re.findall('[A-Z]', new_password) or not re.findall('[0-9]', new_password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', new_password):
+            return JsonResponse({'success': False, 'error': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
+        
+        try:
+            profile = UserProfile.objects.get(reset_token=token)
+            user = profile.user
+            user.password = make_password(new_password)
+            user.save()
+
+            # Clear the reset token
+            profile.reset_token = ''
+            profile.save()
+
+            return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
+        
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid token.'})
+
+class EditProfileView(View):
+
+    @method_decorator(csrf_protect)
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        nickname = request.POST.get('nickname')
+        avatar = request.FILES.get('avatar')
+
+        print(nickname)
+        if not nickname:
+            return JsonResponse({'success': False, 'error': 'Nickname is required.'})
+
+        try:
+            user_profile = user.userprofile
+            user_profile.nickname = nickname
+            if avatar:
+                user_profile.profile_picture = avatar
+            user_profile.save()
+
+            return JsonResponse({'success': True, 'message': 'Profile updated successfully.'})
+        
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Profile does not exist.'})
+
+@method_decorator(login_required, name='dispatch')
+class SendFriendRequestView(View):
+     def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            print(f"Request body: {data}")  # Debug: print the request body
+            to_user_username = data.get('to_user_username')
+            print(f"Username received: {to_user_username}")  # Debug: print the received username
+
+            if not to_user_username:
+                return JsonResponse({'success': False, 'message': 'Username not provided.'})
+            
+            if to_user_username == request.user.username:
+                return JsonResponse({'success': False, 'message': 'You cannot send a friend request to yourself.'})
+
+            to_user = User.objects.get(username=to_user_username)
+            friend_request, created = FriendRequest.objects.get_or_create(
+                from_user=request.user, to_user=to_user)
+            if created:
+                return JsonResponse({'success': True, 'message': 'Friend request sent.'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Friend request already sent.'})
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'User does not exist.'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid JSON.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+@method_decorator(csrf_protect, name='dispatch')
+class AcceptFriendRequestView(View):
+    @method_decorator(login_required)
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            friend_request = FriendRequest.objects.get(id=request_id)
+        except FriendRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Friend request does not exist.'})
+
+        if friend_request.to_user == request.user:
+            Friendship.make_friend(current_user=friend_request.from_user, new_friend=friend_request.to_user)
+            Friendship.make_friend(current_user=friend_request.to_user, new_friend=friend_request.from_user)
+            friend_request.delete()
+            return JsonResponse({'success': True, 'message': 'Friend request accepted.'})
+        return JsonResponse({'success': False, 'message': 'Unauthorized.'})
+
+@method_decorator(csrf_protect, name='dispatch')
+class RejectFriendRequestView(View):
+    @method_decorator(login_required)
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            friend_request = FriendRequest.objects.get(id=request_id)
+        except FriendRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Friend request does not exist.'})
+
+        if friend_request.to_user == request.user:
+            friend_request.delete()
+            return JsonResponse({'success': True, 'message': 'Friend request rejected.'})
+        return JsonResponse({'success': False, 'message': 'Unauthorized.'})
+
+@method_decorator(csrf_protect, name='dispatch')
+class GetFriendRequestsView(View):
+    @method_decorator(login_required)
+    def get(self, request, *args, **kwargs):
+        received_requests = FriendRequest.objects.filter(to_user=request.user)
+        sent_requests = FriendRequest.objects.filter(from_user=request.user)
+        return JsonResponse({
+            'received_requests': [{'id': req.id, 'from_user': req.from_user.username} for req in received_requests],
+            'sent_requests': [{'id': req.id, 'to_user': req.to_user.username} for req in sent_requests]
+        })
+
+@method_decorator(csrf_protect, name='dispatch')
+class GetFriendsView(View):
+    @method_decorator(login_required)
+    def get(self, request, *args, **kwargs):
+        try:
+            friendship = Friendship.objects.get(current_user=request.user)
+            friends = friendship.users.all()
+            friends_list = []
+            for friend in friends:
+                friends_list.append({
+                    'username': friend.username,
+                })
+            return JsonResponse({'friends': friends_list})
+        except Friendship.DoesNotExist:
+            return JsonResponse({'friends': []})
+
+@method_decorator(csrf_protect, name='dispatch')
+class UpdateStatusView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            status = data.get('status')
+            if status not in ['Online', 'Offline']:
+                return JsonResponse({'error': 'Invalid status'}, status=400)
+
+            profile = UserProfile.objects.get(user=request.user)
+            profile.online_status = (status == 'Online')
+            profile.save()
+
+            print(profile.online_status)
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+class MessagesListView(View):
+    def get(self, request, username):
+        print("HERE!!!!!!!!!!")
+        # Retrieve logged-in user
+        user = request.user
+        # Retrieve other user based on username
+        other_user = get_object_or_404(User, username=username)
+
+        # Fetch messages exchanged between the users
+        messages = Message.objects.filter(
+            (Q(sender=user) & Q(receiver=other_user)) |
+            (Q(sender=other_user) & Q(receiver=user))
+        ).order_by('timestamp')
+
+        # Serialize messages into JSON format
+        message_list = []
+        for message in messages:
+            message_list.append({
+                'sender': message.sender.username,
+                'receiver': message.receiver.username,
+                'content': message.content,
+                'timestamp': message.timestamp
+            })
+
+        return JsonResponse(message_list, safe=False)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SendMessageView(View):
+    def post(self, request):
+        try:
+            print("Entered the post method")
+            data = json.loads(request.body)
+            recipient_username = data.get('recipient_username')
+            content = data.get('content')
+
+            # Retrieve logged-in user
+            sender = request.user
+            # Retrieve recipient user
+            recipient = get_object_or_404(User, username=recipient_username)
+
+            # Create and save message in the database
+            message = Message.objects.create(sender=sender, receiver=recipient, content=content)
+            message_id = message.id
+            print(f"Message created: {message_id}")
+
+            # WebSocket broadcast
+            channel_layer = get_channel_layer()
+            room_group_name = f'chat_{recipient_username}'
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': content,
+                    'sender': sender.username,
+                    'message_id': message_id,
+                }
+            )
+
+            return JsonResponse({'status': 'Message sent successfully.'})
+        
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Recipient user not found.'}, status=404)
+
+        except Exception as e:
+            print(f"Exception: {e}")
+            return JsonResponse({'error': 'Internal server error.'}, status=500)
