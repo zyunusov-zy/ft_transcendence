@@ -43,6 +43,25 @@ const getQueryParams = () => {
     return params;
 };
 
+const isAuthenticated = async () => {
+    try {
+        const response = await fetch('/api/check-authentication/', {
+            method: 'GET',
+            'X-CSRFToken': getCookie('csrftoken'),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch authentication status');
+        }
+
+        const data = await response.json();
+        return data.authenticated;
+    } catch (error) {
+        console.error('Error checking authentication:', error);
+        return false;
+    }
+};
+
 // Function to handle the location
 const LocationHandler = async () => {
     let url = window.location.hash;
@@ -53,6 +72,15 @@ const LocationHandler = async () => {
 	console.log(location);
     if (location.length === 0) {
         location = 'login';
+    }
+
+    if (location === 'home') {
+        const authenticated = await isAuthenticated();
+        if (!authenticated) {
+            window.location.href = '/';
+            alert("User needs to be authenticated. Redirecting to login page.");
+            return;
+        }
     }
 
     const route = routes[location] || routes[404];

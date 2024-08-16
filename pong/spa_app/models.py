@@ -61,3 +61,14 @@ class Message(models.Model):
 
     def __str__(self):
         return f"From {self.sender.username} to {self.receiver.username} ({self.timestamp})"
+
+class GameHistory(models.Model):
+    player1 = models.ForeignKey(User, related_name='games_as_player1', on_delete=models.CASCADE)
+    player2 = models.ForeignKey(User, related_name='games_as_player2', on_delete=models.CASCADE)
+    score_player1 = models.IntegerField()
+    score_player2 = models.IntegerField()
+    winner = models.ForeignKey(User, related_name='games_won', on_delete=models.CASCADE)
+    date_played = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.player1} vs {self.player2} - Winner: {self.winner}"

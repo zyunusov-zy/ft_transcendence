@@ -163,6 +163,10 @@ body, html {
     height: 25%;
 }
 
+.side-info > h1 {
+    color: #C33149;
+}
+
 .game-info
 {
     width: 50%;
@@ -364,7 +368,7 @@ body, html {
     width: 100%;
     overflow: hidden;
     transition: border-color 0.3s, color 0.3s;
-    margin-bottom: 1em;
+    margin: 1em 0 1em 0;
 }
 
 .friends-box > a:hover {
@@ -596,32 +600,121 @@ body, html {
     font-size: 1.2em;
     margin-left: 10px;
 }
-
 .chat-box {
+    position: fixed;
+    bottom: 50%;
+    right: 50%;
+    transform: translate(50%, 50%); /* Center the chat box */
+    width: 600px; /* Width of the chat box */
+    height: 400px; /* Height of the chat box */
+    background-color: white;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.7); /* Strong shadow */
+    border-radius: 8px;
+    padding: 30px 20px 20px 20px; /* Consistent padding all around */
+    z-index: 1000;
     display: none;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin: 10px;
-    width: 300px;
+    gap: 10px;
+    flex-direction: column; /* Use flexbox to manage layout */
+    box-sizing: border-box; /* Ensure padding is included in width/height */
 }
 
+/* Active class to display the chat box */
 .chat-box.active {
+    display: flex;
+}
+
+/* Close button styling */
+.chat-box .close-button {
+    background: none;
+    border: none;
+    font-size: 24px; /* Larger close button */
+    cursor: pointer;
+    color: #888;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+
+/* Messages container styling */
+.chat-box .messages {
+    flex-grow: 1;
+    overflow-y: scroll; /* Allow scrolling if messages overflow */
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    scrollbar-width: none; /* Hide scrollbar in Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar in IE and Edge */
+}
+
+/* My message styling */
+.my-message {
+    align-self: flex-start; /* Align to the left */
+    background-color: #d1e7dd; /* Light green for your messages */
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    max-width: 80%;
+}
+
+/* Friend's message styling */
+.friend-message {
+    align-self: flex-end; /* Align to the right */
+    background-color: #f8d7da; /* Light red for friend's messages */
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    max-width: 80%;
+}
+
+/* Container for input field and send button */
+.chat-box .input-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto; /* Push to bottom of chat box */
+}
+
+/* Message input field styling */
+.chat-box .message-input {
+    flex-grow: 1; /* Take up remaining space */
+    padding: 10px; /* Increase padding for better usability */
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+}
+
+/* Send button styling */
+.chat-box .send-button {
+    padding: 10px 20px; /* Increase padding for a larger button */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* Shadowed background for the chat box */
+.chat-box-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+    z-index: 999; /* Below the chat box but above the rest of the content */
+    display: none;
+}
+
+/* Display the background when the chat box is active */
+.chat-box-background.active {
     display: block;
 }
-
-.messages {
-    color: white;
-    height: 200px;
-    overflow-y: auto;
-    margin-bottom: 10px;
-}
-
-
-.message {
-    color: white;
-    margin-bottom: 5px;
-}
-
 
 /* Game */
 
@@ -763,4 +856,91 @@ body, html {
     width: 100%;
     height: 100vh; /* Full height for demonstration */
     overflow: hidden; /* Prevent overflow */
+}
+
+/* Winner */
+
+.winner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+}
+
+.winner-text {
+    font-size: 3em;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.home-button {
+    padding: 10px 20px;
+    background-color: #C33149;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.home-button:hover {
+    background-color: #ff7f7f;
+}
+
+/* Game History */
+
+.game-record {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #131426;
+    color: white;
+}
+
+
+.game-header {
+    text-align: center;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+
+.game-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-left {
+    text-align: left;
+    flex: 1;
+}
+
+
+.player-right {
+    text-align: right;
+    flex: 1;
+}
+
+
+.game-score {
+    flex: 0.2;
+    text-align: center;
+}
+
+
+.winner {
+    color: green;
+    font-weight: bold;
+}
+
+
+.loser {
+    color: red;
 }

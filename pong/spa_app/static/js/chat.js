@@ -1,27 +1,26 @@
 function switchToChatBox() {
     document.querySelector('.chats-box').style.display = 'flex';
-    document.querySelector('.friends-box').style.display = 'none';
-    document.querySelector('.request-box').style.display = 'none';
 }
 
 let chatSockets = {};
 
 function openChatBox(friend) {
     let chatBox = document.getElementById(`chat-box-${friend}`);
+    let background = document.getElementById('chatBoxBackground');
 
     if (!chatBox) {
         chatBox = createChatBox(friend);
     }
 
-    // Open the chat box
+    // Open the chat box and show the background
     chatBox.classList.add('active');
+    background.classList.add('active');
 
     // Fetch and display previous messages
     fetchMessages(friend);
 
     // Establish WebSocket connection if not already connected
     if (!chatSockets[friend]) {
-        console.log("HEEEEEEE");
         establishWebSocketConnection(friend);
     }
 
@@ -38,38 +37,44 @@ function createChatBox(friend) {
     const chatContainer = document.getElementById('chatsBox');
 
     const chatBox = document.createElement('div');
-    chatBox.id = `chat-box-${friend}`;
+    chatBox.id = `chat-box-${friend}`; // Fixed ID attribute
     chatBox.className = 'chat-box';
 
     const closeButton = document.createElement('button');
-    closeButton.textContent = 'Close';
-    closeButton.addEventListener('click', () => chatBox.classList.remove('active'));
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'close-button';
+    closeButton.addEventListener('click', () => {
+        closeChatBox(friend);
+    });
     chatBox.appendChild(closeButton);
 
     const messagesContainer = document.createElement('div');
     messagesContainer.className = 'messages';
     chatBox.appendChild(messagesContainer);
 
+    const inputContainer = document.createElement('div');
+    inputContainer.className = 'input-container';
+
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = 'Type a message...';
     input.className = 'message-input';
-    chatBox.appendChild(input);
+    inputContainer.appendChild(input);
 
     const sendButton = document.createElement('button');
     sendButton.innerText = 'Send';
+    sendButton.className = 'send-button';
     sendButton.addEventListener('click', () => sendMessage(friend));
-    chatBox.appendChild(sendButton);
+    inputContainer.appendChild(sendButton);
 
-    console.log(`chatContainer: ${chatContainer}`);
-    console.log(`ChatBOx:   ${chatBox}`)
-
+    chatBox.appendChild(inputContainer);
     chatContainer.appendChild(chatBox);
 
-    switchToChatBox();
+    switchToChatBox(); // Make sure this function is defined elsewhere
 
     return chatBox;
 }
+
 
 async function fetchMessages(friend) {
     const response = await fetch(`/api/messages/${friend}/`);
@@ -79,13 +84,19 @@ async function fetchMessages(friend) {
 
     messagesContainer.innerHTML = '';
 
+
     console.log(messages);
     messages.forEach(message => {
         const messageElement = document.createElement('div');
-        messageElement.className = 'message';
+        if (message.sender === friend) {
+            messageElement.className = 'message friend-message';
+        } else {
+            messageElement.className = 'message my-message';
+        }
         messageElement.innerHTML = `<strong>${message.sender}:</strong> ${message.content}`;
         messagesContainer.appendChild(messageElement);
     });
+    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Auto scroll to bottom
 }
 
 function sendMessage(friend) {
@@ -164,18 +175,6 @@ function establishWebSocketConnection(friend) {
     chatSockets[friend] = socket;
 }
 
-function displayIncomingMessage(friend, message) {
-    const chatBox = document.getElementById(`chat-box-${friend}`);
-    const messagesContainer = chatBox.querySelector('.messages');
-
-    const messageElement = document.createElement('div');
-    messageElement.className = 'message';
-    messageElement.innerHTML = `<strong>${friend}:</strong> ${message}`;
-    messagesContainer.appendChild(messageElement);
-
-    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Auto scroll to bottom
-}
-
 function displayIncomingMessage(friend, message, sender) {
     const chatBox = document.getElementById(`chat-box-${friend}`);
     if (!chatBox) {
@@ -185,7 +184,11 @@ function displayIncomingMessage(friend, message, sender) {
     const messagesContainer = chatBox.querySelector('.messages');
 
     const messageElement = document.createElement('div');
-    messageElement.className = 'message';
+    if (sender === friend) {
+        messageElement.className = 'message friend-message';
+    } else {
+        messageElement.className = 'message my-message';
+    }
     messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
     messagesContainer.appendChild(messageElement);
 
@@ -204,6 +207,21 @@ function showNotification(title, message) {
 function chatBoxVisible(friend) {
     const chatBox = document.getElementById(`chat-box-${friend}`);
     return chatBox && chatBox.style.display !== 'none';
+}
+
+function closeChatBox(friend) {
+    const chatBox = document.getElementById(`chat-box-${friend}`);
+    const background = document.getElementById('chatBoxBackground');
+
+    if (chatBox) {
+        chatBox.classList.remove('active');
+        chatBox.remove(); // Remove the chat box from the DOM
+    }
+
+    // Hide the shadowed background
+    background.classList.remove('active');
+    document.querySelector('.chats-box').style.display = 'none';
+
 }
 
 const getCookies = (name) => {

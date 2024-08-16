@@ -29,6 +29,11 @@ from .views import (
     # Chat
     MessagesListView,
     SendMessageView,
+    GameHistoryView,
+
+    # Logout
+    LogoutView,
+    CheckAuthenticationView
 )
 
 
@@ -37,6 +42,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', BaseTemplateView.as_view(), name='base'),
+    path('api/check-authentication/', CheckAuthenticationView.as_view(), name='check_authentication'),
     path('login/', LoginView.as_view(), name='login'),
     path('signup/', SignupView.as_view(), name='signup'),
     path('fetch-csrf-token/', FetchCSRFTokenView.as_view(), name='fetch_csrf_token'),
@@ -54,4 +60,6 @@ urlpatterns = [
     path('update-status/', UpdateStatusView.as_view(), name='update_status'),
     path('api/messages/<str:username>/', MessagesListView.as_view(), name='messages-list'),
     path('api/message/send/', SendMessageView.as_view(), name='send-message'),
+    path('api/game-history/', GameHistoryView.as_view(), name='game-history'),
+    path('api/logout/', LogoutView.as_view(), name='logout'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

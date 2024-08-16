@@ -10,7 +10,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode,  urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from .models import UserProfile, Message, FriendRequest, Friendship
+from .models import UserProfile, Message, FriendRequest, Friendship, GameHistory
 import re
 import os 
 from django.conf import settings
@@ -25,6 +25,7 @@ import json
 from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.db import models
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -33,11 +34,13 @@ class BaseTemplateView(View):
         context = kwargs.get('context', {})
         return render(request, self.template_name, context)
 
+@method_decorator(login_required, name='dispatch')
+class CheckAuthenticationView(View):
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({'authenticated': True})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(View):
-
-    @method_decorator(csrf_protect)
     def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -69,9 +72,8 @@ class LoginView(View):
         csrf_token = get_token(request)
         return JsonResponse({'csrfToken': csrf_token})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
-
-    @method_decorator(csrf_protect)
     def post(self, request):
         print("post signup")
         username = request.POST.get('usernamesignup')
@@ -113,6 +115,7 @@ class SignupView(View):
         csrf_token = get_token(request)
         return JsonResponse({'csrfToken': csrf_token})
 
+@method_decorator(csrf_exempt, name='dispatch')
 class FetchCSRFTokenView(View):
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
@@ -136,9 +139,8 @@ class VerifyEmailView(View):
         else:
             return redirect(f'/?verification=failed&uidb64={uidb64}&token={token}#login')
 
-
+@method_decorator(login_required, name='dispatch')
 class UserDataView(LoginRequiredMixin, View):
-
     def get(self, request, *args, **kwargs):
         user = request.user
         try:
@@ -152,6 +154,7 @@ class UserDataView(LoginRequiredMixin, View):
         }
         return JsonResponse(data)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetView(View):
     def post(self, request, *args, **kwargs):
         username = request.POST.get('username')
@@ -204,9 +207,8 @@ class ValidateTokenView(View):
             return JsonResponse({'valid': False, 'error': 'Invalid token'})
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SetNewPasswordView(View):
-
-    @method_decorator(csrf_protect)
     def post(self, request, *args, **kwargs):
         token = request.POST.get('token')
         new_password = request.POST.get('new_password')
@@ -239,31 +241,32 @@ class SetNewPasswordView(View):
         except UserProfile.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid token.'})
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(View):
-
-    @method_decorator(csrf_protect)
     def post(self, request, *args, **kwargs):
         user = request.user
         nickname = request.POST.get('nickname')
         avatar = request.FILES.get('avatar')
 
-        print(nickname)
-        if not nickname:
-            return JsonResponse({'success': False, 'error': 'Nickname is required.'})
+        if not nickname and not avatar:
+            return JsonResponse({'success': False, 'error': 'At least one of nickname or avatar must be provided.'})
 
         try:
             user_profile = user.userprofile
-            user_profile.nickname = nickname
-            if avatar:
+            if nickname is not None:
+                user_profile.nickname = nickname
+            if avatar is not None:
                 user_profile.profile_picture = avatar
             user_profile.save()
 
             return JsonResponse({'success': True, 'message': 'Profile updated successfully.'})
-        
+
         except UserProfile.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Profile does not exist.'})
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class SendFriendRequestView(View):
      def post(self, request, *args, **kwargs):
         try:
@@ -294,7 +297,6 @@ class SendFriendRequestView(View):
 
 @method_decorator(csrf_protect, name='dispatch')
 class AcceptFriendRequestView(View):
-    @method_decorator(login_required)
     def post(self, request, request_id, *args, **kwargs):
         try:
             friend_request = FriendRequest.objects.get(id=request_id)
@@ -310,7 +312,6 @@ class AcceptFriendRequestView(View):
 
 @method_decorator(csrf_protect, name='dispatch')
 class RejectFriendRequestView(View):
-    @method_decorator(login_required)
     def post(self, request, request_id, *args, **kwargs):
         try:
             friend_request = FriendRequest.objects.get(id=request_id)
@@ -323,8 +324,8 @@ class RejectFriendRequestView(View):
         return JsonResponse({'success': False, 'message': 'Unauthorized.'})
 
 @method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class GetFriendRequestsView(View):
-    @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
         received_requests = FriendRequest.objects.filter(to_user=request.user)
         sent_requests = FriendRequest.objects.filter(from_user=request.user)
@@ -334,8 +335,8 @@ class GetFriendRequestsView(View):
         })
 
 @method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class GetFriendsView(View):
-    @method_decorator(login_required)
     def get(self, request, *args, **kwargs):
         try:
             friendship = Friendship.objects.get(current_user=request.user)
@@ -350,6 +351,7 @@ class GetFriendsView(View):
             return JsonResponse({'friends': []})
 
 @method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class UpdateStatusView(View):
     def post(self, request, *args, **kwargs):
         try:
@@ -367,7 +369,7 @@ class UpdateStatusView(View):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-
+@method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
     def get(self, request, username):
         print("HERE!!!!!!!!!!")
@@ -438,3 +440,27 @@ class SendMessageView(View):
         except Exception as e:
             print(f"Exception: {e}")
             return JsonResponse({'error': 'Internal server error.'}, status=500)
+
+@method_decorator(login_required, name='dispatch')
+class GameHistoryView(View):
+    def get(self, request, *args, **kwargs):
+        games = GameHistory.objects.filter(
+            models.Q(player1=request.user) | models.Q(player2=request.user)
+        ).order_by('-date_played')[:10]
+
+        history = [{
+            'player1': game.player1.username,
+            'player2': game.player2.username,
+            'score_player1': game.score_player1,
+            'score_player2': game.score_player2,
+            'winner': game.winner.username,
+            'date_played': game.date_played.strftime('%Y-%m-%d %H:%M:%S')
+        } for game in games]
+
+        return JsonResponse({'history': history})
+
+@method_decorator(login_required, name='dispatch')
+class LogoutView(View):
+    def post(self, request):
+        logout(request)
+        return JsonResponse({"success": True}, status=200)

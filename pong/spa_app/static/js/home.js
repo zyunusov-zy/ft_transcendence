@@ -40,16 +40,16 @@ function initializeHome() {
     const friendsBox = document.getElementById('friendsBox');
     const incomingRequestsBox = document.getElementById('incomingRequests');
     const requestsLink = document.getElementById('requestsLink');
+    const historyLink =  document.getElementById('historyLink');
+    const playLink = document.getElementById('playLink');
 
-
-
-    if (!addFriendLink || !closeOverlay || !overlay || !addFriendButton || !incomingRequestsBox 
+    if ( !historyLink ||!addFriendLink || !closeOverlay || !overlay || !addFriendButton || !incomingRequestsBox 
         || !friendNameInput || !friendsBox || !requestsLink) {
         console.error('Home page elements not found');
         return;
     }
-    const gameApp = new GameApp();
-    gameApp.init();
+    const globApp = new GlobApp();
+    globApp.init();
     console.log("I AM HERESSSS");
     addFriendLink.addEventListener('click', (event) => {
         event.preventDefault();
@@ -215,16 +215,6 @@ function initializeHome() {
         loadFriends();
     });
     
-    document.getElementById('chatsLink').addEventListener('click', (event) => {
-        event.preventDefault();
-    
-        document.querySelector('.chats-box').style.display = 'flex';
-        document.querySelector('.friends-box').style.display = 'none';
-        document.querySelector('.request-box').style.display = 'none';
-    
-        // Call any function to load chats if needed
-        // loadChats();
-    });
     
     document.getElementById('requestsLink').addEventListener('click', (event) => {
         event.preventDefault();
@@ -261,15 +251,113 @@ function initializeHome() {
         });
     }
 
+    historyLink.addEventListener('click', function(e) {
+        // History
+        e.preventDefault();
+        document.querySelector('.play-box').style.display = 'none';
+        document.querySelector('.history-box').style.display = 'flex';
+    
+        fetch('/api/game-history/')
+        .then(response => response.json())
+        .then(data => {
+            const historyBox = document.getElementById('historyBox');
+            historyBox.innerHTML = ''; // Clear existing history
+    
+            data.history.forEach(game => {
+                const gameRecord = document.createElement('div');
+                gameRecord.classList.add('game-record');
+                
+                // Determine the classes based on the winner
+                const player1Class = game.player1 === game.winner ? 'winner' : 'loser';
+                const player2Class = game.player2 === game.winner ? 'winner' : 'loser';
+    
+                gameRecord.innerHTML = `
+                    <div class="game-header">
+                        <div class="game-date">${game.date_played}</div>
+                    </div>
+                    <div class="game-details">
+                        <div class="player player-left ${player1Class}">${game.player1} (${game.score_player1})</div>
+                        <div class="game-score">vs</div>
+                        <div class="player player-right ${player2Class}">${game.player2} (${game.score_player2})</div>
+                    </div>
+                `;
+                historyBox.appendChild(gameRecord);
+            });
+        })
+        .catch(error => console.error('Error loading game history:', error));
+    });
+
+    playLink.addEventListener('click', function(e){
+        // play box
+        e.preventDefault();
+        document.querySelector('.play-box').style.display = 'flex';
+        document.querySelector('.history-box').style.display = 'none';
+    })
+    
     document.getElementById('PlayWithFriendButton').addEventListener("click", function(event) {
         event.preventDefault();
-        fetchFriendsList(gameApp);
+        console.log("AM I HERE AGAIN");
+        fetchFriendsList(globApp);
         document.getElementById('popupContainer').style.display = 'flex';
 	    document.getElementById('overlayF').style.display = 'block';
     });
+
+    let firstLinkF = document.querySelector('.side-links a:first-child');
+    if (firstLinkF) {
+        addBorder(firstLinkF);
+    }
+
+    let firstLinkG = document.querySelector('.game-links a:first-child');
+    if (firstLinkG) {
+        addBorderM(firstLinkG);
+    }
+
+    document.querySelectorAll('.side-links a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            addBorder(this);
+        });
+    });
+    
+    // Attach event listeners to all links in the game-links
+    document.querySelectorAll('.game-links a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            addBorderM(this);
+        });
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', (event) => {
+        event.preventDefault();
+        handleLogout(globApp);
+    });
+    
     Status();
     loadFriends();
 }
+function addBorder(element) {
+    // Remove border from all links
+    var links = document.querySelectorAll('.side-links a');
+    links.forEach(function(link) {
+        link.style.borderBottom = 'none';
+        link.style.color = 'white';
+    });
+
+    // Add border to the clicked link
+    element.style.borderBottom = '2px solid white';
+    element.style.color = '#C33149';
+}
+
+function addBorderM(element)
+{
+	var linksm = document.querySelectorAll('.game-links a');
+	linksm.forEach(function(link) {
+        link.style.borderBottom = 'none';
+		link.style.color = '#100C4F';
+    });
+
+	element.style.borderBottom = '2px solid white';
+	element.style.color = 'white';
+}
+
 
 
 function attachEventListeners() {
@@ -284,7 +372,6 @@ function attachEventListeners() {
 
     // Ensure elements exist before adding event listeners
     const friendsLink = document.getElementById('friendsLink');
-    const chatsLink = document.getElementById('chatsLink');
     const requestsLink = document.getElementById('requestsLink');
 
     if (friendsLink) {
@@ -292,13 +379,6 @@ function attachEventListeners() {
             event.preventDefault();
             showBox('friends-box');
             loadFriends();
-        });
-    }
-
-    if (chatsLink) {
-        chatsLink.addEventListener('click', (event) => {
-            event.preventDefault();
-            showBox('chats-box');
         });
     }
 
