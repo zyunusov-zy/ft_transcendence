@@ -12,6 +12,11 @@ class UserProfile(models.Model):
 	profile_picture = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
 	reset_token = models.CharField(max_length=64, blank=True, null=True)
 	online_status = models.BooleanField(default=False)
+	status = models.CharField(max_length=10, choices=[
+        ('available', 'Available'),
+        ('in_game', 'In Game'),
+        ('offline', 'Offline'),
+    ], default='offline')
 
 	def __str__(self):
 		return self.user.username

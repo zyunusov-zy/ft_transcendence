@@ -25,6 +25,9 @@ class GlobApp {
                     console.log("Game request accepted");
                     this.gameVis(data.responder_username);
                 }
+            } else if (data.type === 'in_game') {
+                alert(data.message);
+                console.error('Error:', data.message);
             }
         };
 

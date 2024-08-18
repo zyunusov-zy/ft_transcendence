@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Message, GameHistory
+from .models import Message, GameHistory, UserProfile
 from channels.db import database_sync_to_async
 from django.core.cache import cache
 import re
@@ -30,6 +30,10 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             await self.accept()
+
+            self.user_obj = await database_sync_to_async(User.objects.get)(username=self.user.username)
+        
+            await database_sync_to_async(self.update_status)('available', self.user_obj)
             print(f"User {self.user.id} accepted in user-specific channel {self.group_name}")
         else:
             await self.close()
@@ -60,22 +64,34 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             try:
                 # Sanitize the recipient's group name
                 receiver = await sync_to_async(User.objects.get)(username=receiver_username)
-                receiver_id = receiver.id
-                recipient_channel_name = sanitize_group_name(f"user_{receiver_id}")
-                
-                print(f"GlobalConsumer: Sending game request from user {sender_id} to user {receiver_id} (username: {receiver_username}).")
-                
-                await self.channel_layer.group_send(
-                    recipient_channel_name,
-                    {
-                        'type': 'game_request',
-                        'game_request': game_request,
-                        'sender_id': sender_id,
-                        'sender_username': self.user.username,
-                    }
-                )
-                
-                print(f"GlobalConsumer: Game request sent to channel {recipient_channel_name}.")
+                receiver_profile = await sync_to_async(UserProfile.objects.get)(user=receiver)
+
+                print(receiver_profile.status)
+                if receiver_profile.status == 'in_game':
+                    # Send an error message back to the sender
+                    await self.send(text_data=json.dumps({
+                        'type': 'in_game',
+                        'message': f'User {receiver_username} is currently in a game and cannot accept new requests.'
+                    }))
+                    print(f"GlobalConsumer: User {receiver_username} is in a game. Request rejected.")
+                else:
+                    # Sanitize the recipient's group name and send the game request
+                    receiver_id = receiver.id
+                    recipient_channel_name = sanitize_group_name(f"user_{receiver_id}")
+                    
+                    print(f"GlobalConsumer: Sending game request from user {sender_id} to user {receiver_id} (username: {receiver_username}).")
+                    
+                    await self.channel_layer.group_send(
+                        recipient_channel_name,
+                        {
+                            'type': 'game_request',
+                            'game_request': game_request,
+                            'sender_id': sender_id,
+                            'sender_username': self.user.username,
+                        }
+                    )
+                    
+                    print(f"GlobalConsumer: Game request sent to channel {recipient_channel_name}.")
             except User.DoesNotExist:
                 print(f"GlobalConsumer: User with username {receiver_username} does not exist.")
         elif response:
@@ -128,6 +144,13 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             'type': 'notification',
             'message': message
         }))
+
+    @staticmethod
+    def update_status(status, user_obj):
+        # Fetch the UserProfile object and update the status
+        profile = UserProfile.objects.get(user=user_obj)
+        profile.status = status
+        profile.save()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -239,6 +262,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         }
         self.side = self.players['left'].side if self.user < self.friend else self.players['right'].side
 
+        user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
+        friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
+
+        await database_sync_to_async(self.update_status)(user_obj, 'in_game')
+        await database_sync_to_async(self.update_status)(friend_user_obj, 'in_game')
+
+
         await self.send(text_data=json.dumps({
             'type': 'side_assignment',
             'side': self.side,
@@ -271,6 +301,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             )
 
             print(f"[DEBUG] Game record created with ID: {game_record.id}")
+
+        user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
+        friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
+
+        await database_sync_to_async(self.update_status)(user_obj, 'available')
+        await database_sync_to_async(self.update_status)(friend_user_obj, 'available')
 
         print(f"User {self.user} disconnecting from game room: {self.room_name}")
         await self.channel_layer.group_discard(
@@ -380,3 +416,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"[DEBUG] game_over_message called. Message: {message}")
 
         await self.send(text_data=json.dumps(message))
+    @staticmethod
+    def update_status(user, status):
+        profile = UserProfile.objects.get(user=user)
+        profile.status = status
+        profile.save()
