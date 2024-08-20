@@ -340,7 +340,7 @@ body, html {
 
 
 
-.friends-box, .chats-box, .request-box
+.friends-box, .chats-box
 {
     display: flex;
     flex-wrap: wrap;
@@ -534,6 +534,19 @@ body, html {
     padding-left: 1rem;
     cursor: pointer;
     color: white;
+}
+
+.status-icon {
+    display: inline-block;
+    width: 20px; /* Set the width of the SVG */
+    height: 20px; /* Set the height of the SVG */
+    margin-right: 10px; /* Space between the icon and the nickname */
+}
+
+.status-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block; /* Ensure the SVG takes up the full container size */
 }
 
 .friend-mini-box:hover
@@ -798,6 +811,73 @@ body, html {
     align-items: center;
     z-index: 9999;
 }
+/* Friend Request */
+
+.request-box {
+    display: none;
+    flex-wrap: wrap;
+    height: 100%;
+    padding: 0 20px;
+    width: 100%;
+    justify-content: center;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+#incomingRequests
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+.friend-request {
+    display: flex;
+    width: 100%;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    color: white;
+}
+
+.friend-request:hover
+{
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.nickname {
+    flex: 1;
+    text-align: left;
+    font-size: 1rem;
+}
+
+.actions-container {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.accept-link svg {
+    fill: green;
+}
+
+.reject-link svg {
+    fill: red;
+}
+
+
 /* Game Request */
 #gameRequestOverlay {
     position: fixed;

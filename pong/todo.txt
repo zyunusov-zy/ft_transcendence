@@ -1,0 +1,47 @@
+Docker 
+change later from ws to wss and enable an HTTPS connection
+
+
+
+Game
+
+0) ball needs to start from racket when user scores
+
+1)User should be able to play with one keyboard
+
+2)Need to create a Tournament
+
+Modules to do list:
+
+• Major module: Standard user management, authentication, users across tournaments.
+◦ Users can select a unique display name to play the tournaments.
+
+1) • Major module: Live Chat.
+◦ The user should be able to block other users. This way, they will see no more
+messages from the account they blocked.
+◦ The user should be able to invite other users to play a Pong game through the
+chat interface.
+◦ The user should be able to access other players profiles through the chat interface.
+
+Modules: 6
+
+• Major module: Use a Framework as backend.
+• Minor module: Use a front-end framework or toolkit.
+• Minor module: Use a database for the backend -and more
+• Major module: Standard user management, authentication, users across tournaments.
+• Major module: Remote players
+• Major module: Live Chat
+• Major module: Implementing Advanced 3D Techniques
+
+
+Maybe I can add easy:
+
+• Minor module: Game Customization Options.
+• Minor module: User and Game Stats Dashboards
+• Minor module: Expanding Browser Compatibility
+
+
+MB hard but mostly done:
+
+• Major module: Replacing Basic Pong with Server-Side Pong and Implementing
+an API.

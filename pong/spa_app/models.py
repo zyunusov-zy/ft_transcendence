@@ -16,6 +16,7 @@ class UserProfile(models.Model):
         ('available', 'Available'),
         ('in_game', 'In Game'),
         ('offline', 'Offline'),
+		('online', 'Online'),
     ], default='offline')
 
 	def __str__(self):

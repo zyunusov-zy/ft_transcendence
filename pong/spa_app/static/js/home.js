@@ -107,25 +107,42 @@ function initializeHome() {
         }
     
         const result = await response.json();
+
         incomingRequestsBox.innerHTML = '';
         result.received_requests.forEach(request => {
             const requestElem = document.createElement('div');
             requestElem.classList.add('friend-request');
     
             const nickname = document.createElement('span');
+            nickname.classList.add('nickname');
             nickname.textContent = `${request.from_user}`;
     
-            const acceptButton = document.createElement('button');
-            acceptButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="green" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-1.41 17.41l-5-5a.996.996 0 1 1 1.41-1.41L11 14.59l6.29-6.29a.996.996 0 1 1 1.41 1.41l-7 7a.996.996 0 0 1-1.41 0z"/></svg>`;
-            acceptButton.addEventListener('click', () => handleAcceptRequest(request.id));
+            const actionsContainer = document.createElement('div');
+            actionsContainer.classList.add('actions-container');
     
-            const rejectButton = document.createElement('button');
-            rejectButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>`;
-            rejectButton.addEventListener('click', () => handleRejectRequest(request.id));
+            const acceptLink = document.createElement('a');
+            acceptLink.href = '#'; // Use a placeholder href
+            acceptLink.classList.add('action-link', 'accept-link');
+            acceptLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="green" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-1.41 17.41l-5-5a.996.996 0 1 1 1.41-1.41L11 14.59l6.29-6.29a.996.996 0 1 1 1.41 1.41l-7 7a.996.996 0 0 1-1.41 0z"/></svg>`;
+            acceptLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                handleAcceptRequest(request.id);
+            });
+    
+            const rejectLink = document.createElement('a');
+            rejectLink.href = '#'; // Use a placeholder href
+            rejectLink.classList.add('action-link', 'reject-link');
+            rejectLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>`;
+            rejectLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                handleRejectRequest(request.id);
+            });
+    
+            actionsContainer.appendChild(acceptLink);
+            actionsContainer.appendChild(rejectLink);
     
             requestElem.appendChild(nickname);
-            requestElem.appendChild(acceptButton);
-            requestElem.appendChild(rejectButton);
+            requestElem.appendChild(actionsContainer);
     
             incomingRequestsBox.appendChild(requestElem);
         });
@@ -140,7 +157,7 @@ function initializeHome() {
         });
     
         if (response.redirected) {
-            window.location.href = response.url; // Redirect to the login page if not authenticated
+            window.location.href = '';
             return;
         }
     
@@ -152,13 +169,29 @@ function initializeHome() {
             friendElem.classList.add('friend-mini-box');
     
             const nickname = document.createElement('span');
-            nickname.textContent = friend.username; 
-    
+            nickname.textContent = friend.username;
+            nickname.setAttribute('id', `nick`);
+
+            const statusIcon = document.createElement('span');
+            statusIcon.classList.add('status-icon');
+            
+            console.log(friend.status);
+            if (friend.status === 'online') {
+                statusIcon.innerHTML = '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#689f38"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path></g></svg>';
+            } else if (friend.status === 'offline') {
+                statusIcon.innerHTML = '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#c33"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#f44336"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#ff8a80"></path></g></svg>';
+            } else if (friend.status === 'in_game') {
+                statusIcon.innerHTML = '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" fill="#1E88E5"><circle cx="64" cy="64" r="60" fill="#42A5F5"></circle><circle cx="64" cy="64" r="56" fill="#90CAF9"></circle></svg>';            
+            }else if ( friend.status === 'available'){
+                statusIcon.innerHTML = '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#689f38"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path></g></svg>';
+            }
             const chatIcon = document.createElement('span');
             chatIcon.classList.add('chat-icon');
             chatIcon.innerHTML = '&#x1F4AC;'; // Unicode for chat bubble icon
             chatIcon.addEventListener('click', () => openChatBox(friend.username));
 
+            console.log(statusIcon);
+            friendElem.appendChild(statusIcon);
             friendElem.appendChild(nickname);
             friendElem.appendChild(chatIcon);
 
@@ -235,19 +268,43 @@ function initializeHome() {
         if(!onlineButton || !offlineButton)
             return;
 
-        
+        function updateStatusOnServer(status) {
+            fetch('/update-status/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // Important to include CSRF token for POST requests in Django
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok.');
+                }
+            })
+            .then(data => {
+                console.log('Status updated successfully:', data);
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+            });
+        }
 
         console.log("HHHHHHHHHHHHHHHHHHHHHH");
         onlineButton.addEventListener('click', function(event) {
             event.preventDefault(); 
             statusSpan.innerHTML = 'Online';
             statusSpan.innerHTML += '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#689f38"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path></g></svg>';
+            updateStatusOnServer('online');
         });
     
         offlineButton.addEventListener('click', function(event) {
             event.preventDefault(); 
             statusSpan.innerHTML = 'Offline';
 		    statusSpan.innerHTML += '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#c33"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#f44336"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#ff8a80"></path></g></svg>';
+            updateStatusOnServer('offline');
         });
     }
 

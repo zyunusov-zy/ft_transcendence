@@ -2,12 +2,44 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Message, GameHistory, UserProfile
+from .models import Message, GameHistory, UserProfile, Friendship
 from channels.db import database_sync_to_async
 from django.core.cache import cache
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 import re
 
 User = get_user_model()
+
+def update_status_and_notify_friends(user, status):
+    # Update the user's status
+    profile = UserProfile.objects.get(user=user)
+    profile.status = status
+    profile.save()
+
+    # Notify the user's friends
+    notify_friends_status_change(user, status)
+
+def notify_friends_status_change(user, status):
+    # Get the user's friends
+    try:
+        friendship = Friendship.objects.get(current_user=user)
+        friends = friendship.users.all()
+
+        # Notify each friend about the user's status change
+        channel_layer = get_channel_layer()
+        for friend in friends:
+            friend_channel_name = sanitize_group_name(f"user_{friend.id}")
+            async_to_sync(channel_layer.group_send)(
+                friend_channel_name,
+                {
+                    'type': 'friend_status_update',
+                    'username': user.username,
+                    'status': status,
+                }
+            )
+    except Friendship.DoesNotExist:
+        pass
 
 def sanitize_group_name(name):
     # Remove characters that are not alphanumeric, hyphens, underscores, or periods
@@ -33,7 +65,8 @@ class GlobalConsumer(AsyncWebsocketConsumer):
 
             self.user_obj = await database_sync_to_async(User.objects.get)(username=self.user.username)
         
-            await database_sync_to_async(self.update_status)('available', self.user_obj)
+            await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'online')
+            
             print(f"User {self.user.id} accepted in user-specific channel {self.group_name}")
         else:
             await self.close()
@@ -47,6 +80,10 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 self.channel_name
             )
+            self.user_obj = await database_sync_to_async(User.objects.get)(username=self.user.username)
+        
+            await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'offline')
+            
             print(f"User {self.user.id} removed from user-specific channel {self.group_name}")
         else:
             print("Group name or channel name not found during disconnection.")
@@ -68,12 +105,17 @@ class GlobalConsumer(AsyncWebsocketConsumer):
 
                 print(receiver_profile.status)
                 if receiver_profile.status == 'in_game':
-                    # Send an error message back to the sender
                     await self.send(text_data=json.dumps({
                         'type': 'in_game',
                         'message': f'User {receiver_username} is currently in a game and cannot accept new requests.'
                     }))
                     print(f"GlobalConsumer: User {receiver_username} is in a game. Request rejected.")
+                elif receiver_profile.status == 'offline':
+                    await self.send(text_data=json.dumps({
+                        'type': 'offline',
+                        'message': f'User {receiver_username} is currently offline and cannot accept new requests.'
+                    }))
+                    print(f"GlobalConsumer: User {receiver_username} is offline. Request rejected.")
                 else:
                     # Sanitize the recipient's group name and send the game request
                     receiver_id = receiver.id
@@ -145,12 +187,15 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             'message': message
         }))
 
-    @staticmethod
-    def update_status(status, user_obj):
-        # Fetch the UserProfile object and update the status
-        profile = UserProfile.objects.get(user=user_obj)
-        profile.status = status
-        profile.save()
+    async def friend_status_update(self, event):
+        print("Updating status")
+        print(event['username'])
+        print(event['status'])
+        await self.send(text_data=json.dumps({
+            'type': 'friend_status_update',
+            'username': event['username'],
+            'status': event['status'],
+        }))
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -265,8 +310,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
-        await database_sync_to_async(self.update_status)(user_obj, 'in_game')
-        await database_sync_to_async(self.update_status)(friend_user_obj, 'in_game')
+        await database_sync_to_async(update_status_and_notify_friends)(user_obj, 'in_game')
+        await database_sync_to_async(update_status_and_notify_friends)(friend_user_obj, 'in_game')
 
 
         await self.send(text_data=json.dumps({
@@ -305,8 +350,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
-        await database_sync_to_async(self.update_status)(user_obj, 'available')
-        await database_sync_to_async(self.update_status)(friend_user_obj, 'available')
+        await database_sync_to_async(update_status_and_notify_friends)(user_obj, 'available')
+        await database_sync_to_async(update_status_and_notify_friends)(friend_user_obj, 'available')
 
         print(f"User {self.user} disconnecting from game room: {self.room_name}")
         await self.channel_layer.group_discard(
@@ -416,8 +461,3 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"[DEBUG] game_over_message called. Message: {message}")
 
         await self.send(text_data=json.dumps(message))
-    @staticmethod
-    def update_status(user, status):
-        profile = UserProfile.objects.get(user=user)
-        profile.status = status
-        profile.save()

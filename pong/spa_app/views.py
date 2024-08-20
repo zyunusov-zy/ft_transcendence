@@ -26,6 +26,7 @@ from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.db import models
+from .consumers import update_status_and_notify_friends
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -343,31 +344,44 @@ class GetFriendsView(View):
             friends = friendship.users.all()
             friends_list = []
             for friend in friends:
+                # Get the friend's profile and status
+                profile = UserProfile.objects.get(user=friend)
                 friends_list.append({
                     'username': friend.username,
+                    'status': profile.status,
                 })
             return JsonResponse({'friends': friends_list})
         except Friendship.DoesNotExist:
             return JsonResponse({'friends': []})
 
-@method_decorator(csrf_protect, name='dispatch')
 @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')  # Exempt CSRF for simplicity
 class UpdateStatusView(View):
+
     def post(self, request, *args, **kwargs):
         try:
+            # Parse the request body
             data = json.loads(request.body)
             status = data.get('status')
-            if status not in ['Online', 'Offline']:
-                return JsonResponse({'error': 'Invalid status'}, status=400)
+            user = request.user
 
-            profile = UserProfile.objects.get(user=request.user)
-            profile.online_status = (status == 'Online')
-            profile.save()
+            # Ensure the user is authenticated
+            if user.is_authenticated:
+                # Get user profile and update the status
+                profile = UserProfile.objects.get(user=user)
+                profile.status = status
+                profile.save()
 
-            print(profile.online_status)
-            return JsonResponse({'status': 'success'})
+                update_status_and_notify_friends(user, status)
+                print(profile.status)
+                # Respond with a success message
+                return JsonResponse({'status': 'success', 'message': 'Status updated successfully'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'UserProfile not found'}, status=404)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
