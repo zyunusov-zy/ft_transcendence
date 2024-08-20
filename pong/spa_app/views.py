@@ -150,7 +150,7 @@ class UserDataView(LoginRequiredMixin, View):
             profile = None
 
         data = {
-            'nickname': profile.nickname if profile and profile.nickname else user.username,
+            'nickname': user.username,
             'avatar': profile.profile_picture.url if profile and profile.profile_picture else '/static/img/avatar.jpg',
         }
         return JsonResponse(data)
@@ -247,7 +247,6 @@ class SetNewPasswordView(View):
 class EditProfileView(View):
     def post(self, request, *args, **kwargs):
         user = request.user
-        nickname = request.POST.get('nickname')
         avatar = request.FILES.get('avatar')
 
         if not nickname and not avatar:
@@ -255,8 +254,6 @@ class EditProfileView(View):
 
         try:
             user_profile = user.userprofile
-            if nickname is not None:
-                user_profile.nickname = nickname
             if avatar is not None:
                 user_profile.profile_picture = avatar
             user_profile.save()
@@ -384,6 +381,7 @@ class UpdateStatusView(View):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
     def get(self, request, username):
         print("HERE!!!!!!!!!!")
@@ -410,7 +408,7 @@ class MessagesListView(View):
 
         return JsonResponse(message_list, safe=False)
 
-
+@method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
 class SendMessageView(View):
     def post(self, request):
@@ -455,6 +453,8 @@ class SendMessageView(View):
             print(f"Exception: {e}")
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
+
+@method_decorator(login_required, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class GameHistoryView(View):
     def get(self, request, *args, **kwargs):
@@ -472,6 +472,51 @@ class GameHistoryView(View):
         } for game in games]
 
         return JsonResponse({'history': history})
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
+class SaveGameHistoryView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            # Parse the JSON data from the request
+            data = json.loads(request.body)
+            print(request.body)
+
+            # The logged-in user is always one of the players
+            logged_in_user = request.user
+
+            # The opponent's username
+            opponent_username = data.get('player2_username')
+            try:
+                # Try to fetch the opponent user
+                opponent = User.objects.get(username=opponent_username)
+            except User.DoesNotExist:
+                # If the opponent does not exist, create a guest or temporary user
+                opponent = User.objects.create(username=opponent_username)
+
+            # Determine the winner
+            if data['winner_username'] == opponent_username:
+                winner = opponent_username
+            else:
+                winner = logged_in_user
+
+            # Create a new GameHistory record
+            game_history = GameHistory.objects.create(
+                player1=logged_in_user,  # The logged-in user
+                player2=opponent,        # The opponent (possibly newly created)
+                score_player1=data['score_player1'],  # Logged-in user's score
+                score_player2=data['score_player2'],  # Opponent's score
+                winner=winner,
+            )
+
+            # Return a success response
+            return JsonResponse({'message': 'Game history saved successfully.'}, status=201)
+
+        except KeyError as e:
+            return JsonResponse({'error': f'Missing field in request: {str(e)}'}, status=400)
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)
 
 @method_decorator(login_required, name='dispatch')
 class LogoutView(View):

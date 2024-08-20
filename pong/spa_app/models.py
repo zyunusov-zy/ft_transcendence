@@ -8,7 +8,6 @@ def user_directory_path(instance, filename):
 class UserProfile(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
 	email_verified = models.BooleanField(default=False)
-	nickname = models.CharField(max_length=50, blank=True, null=True)
 	profile_picture = models.ImageField(upload_to=user_directory_path, blank=True, null=True)
 	reset_token = models.CharField(max_length=64, blank=True, null=True)
 	online_status = models.BooleanField(default=False)

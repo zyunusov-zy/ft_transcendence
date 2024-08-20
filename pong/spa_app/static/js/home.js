@@ -359,6 +359,28 @@ function initializeHome() {
 	    document.getElementById('overlayF').style.display = 'block';
     });
 
+    document.getElementById('PlayWithFriendSameButton').addEventListener("click", function(event) {
+        event.preventDefault();
+        
+        // Show the form to get the opponent's username
+        document.getElementById('opponentFormContainer').style.display = 'flex';
+    });
+    
+    document.getElementById('opponentForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        // Get the opponent's username from the form
+        const opponentUsername = document.getElementById('opponent_username').value;
+        const own = document.getElementById('own_username').value;
+
+        // Initialize the game with the provided opponent username
+        const gameAppS = new GameAPPS(own, opponentUsername);
+        gameAppS.init();
+        
+        // Optionally, hide the form after submission
+        document.getElementById('opponentFormContainer').style.display = 'none';
+    });
+
     let firstLinkF = document.querySelector('.side-links a:first-child');
     if (firstLinkF) {
         addBorder(firstLinkF);

@@ -33,7 +33,8 @@ from .views import (
 
     # Logout
     LogoutView,
-    CheckAuthenticationView
+    CheckAuthenticationView,
+    SaveGameHistoryView
 )
 
 
@@ -61,5 +62,6 @@ urlpatterns = [
     path('api/message/send/', SendMessageView.as_view(), name='send-message'),
     path('api/game-history/', GameHistoryView.as_view(), name='game-history'),
     path('api/logout/', LogoutView.as_view(), name='logout'),
+    path('save-game-history/', SaveGameHistoryView.as_view(), name='save-game-history'),
     path('update-status/', UpdateStatusView.as_view(), name='update_status'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

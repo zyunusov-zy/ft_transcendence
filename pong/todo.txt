@@ -5,9 +5,9 @@ change later from ws to wss and enable an HTTPS connection
 
 Game
 
-0) ball needs to start from racket when user scores
+0)need to create input field fro nickname for the opponent
 
-1)User should be able to play with one keyboard
+1) ball needs to start from racket when user scores
 
 2)Need to create a Tournament
 
@@ -45,3 +45,5 @@ MB hard but mostly done:
 
 • Major module: Replacing Basic Pong with Server-Side Pong and Implementing
 an API.
+
+• Major module: Implementing a remote authentication.(on freeze cant get key to access)
