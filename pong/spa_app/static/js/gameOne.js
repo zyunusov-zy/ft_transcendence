@@ -1,7 +1,7 @@
 class PlayerS {
     constructor(username) {
         this.username = username;
-        this.score = 4;
+        this.score = 0;
         this.winner = 0;
     }
 
@@ -67,6 +67,7 @@ class GameAPPS {
 
         this.animationFrameId = null;
         this.gameRunning = true; 
+        this.attachedToRacket = null;
     }
 
 	initGame() {
@@ -164,6 +165,20 @@ class GameAPPS {
 	addEventListeners() {
         this.onKeyDown();
 		this.onKeyUp();
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'ShiftLeft' && this.attachedToRacket === 'player1') {
+                // Player 2 releases the ball
+                this.ballVelocity.set(4, 0, this.racket.position.z > 0 ? -4 : 4);                
+                this.attachedToRacket = null; // Ball is no longer attached
+                console.log(this.ballVelocity);
+            } else if (event.code === 'ShiftRight' && this.attachedToRacket === 'player2') {
+                // Player 1 releases the ball
+                this.ballVelocity.set(-4, 0, this.rRacket.position.z > 0 ? -4 : 4);               
+                this.attachedToRacket = null; // Ball is no longer attached
+                console.log(this.ballVelocity);
+            }
+        });
     }
 
 	onKeyDown() {
@@ -232,25 +247,18 @@ class GameAPPS {
         // When player scores
         if (this.ball.position.x + this.ballRadius >= this.tableProp.maxX && this.ballVelocity.x > 0) {
             // right
-            // if (this.players.player1.score === 5)
-			// {
-			// 	this.handleGameOver(this.players.player1.username);
-			// 	return;
-			// }
+            console.log("table: ", this.tableProp.maxX);
+            console.log(this.ball.position);
 			this.players.player1.increaseScore();
-			
             this.updateScoreboard();
-            this.resetBall();
+            this.resetBall('player1');
         } else if (this.ball.position.x - this.ballRadius <= this.tableProp.minX && this.ballVelocity.x < 0) {
             // left
-			// if (this.players.player2.score === 5)
-			// {
-			// 	this.handleGameOver(this.players.player2.username);
-			// 	return;
-			// }
+            console.log("table: ", this.tableProp.minX);
+            console.log(this.ball.position);
             this.players.player2.increaseScore();
             this.updateScoreboard();
-            this.resetBall();
+            this.resetBall('player2');
         }
 
         // Check collision with left racket
@@ -278,12 +286,32 @@ class GameAPPS {
         }
     }
 
-	resetBall() {
-        this.ball.position.set(0, this.tableH / 2 + 7, -(this.tableD / 4));
-		// ballVelocity.x *= -1;
-		// ballVelocity.z *= -1;
-		// ballVelocity.set(2, 0, 2); // Set initial velocity
-	}
+	resetBall(scoredBy) {
+        // Check which player scored and position the ball near the opponent's racket
+        if (scoredBy === 'player1') {
+            // Player 1 scored, position the ball near Player 2's racket
+            this.ball.position.set(
+                this.racket.position.x + this.racketW + 10, 
+                this.tableH / 2 + 7,
+                this.racket.position.z
+            );
+            this.ballVelocity.set(0, 0, 0); // Stop the ball initially
+    
+            // Attach the ball to Player 2's racket
+            this.attachedToRacket = 'player2'; // To track the ball is attached to Player 2
+        } else if (scoredBy === 'player2') {
+            // Player 2 scored, position the ball near Player 1's racket
+            this.ball.position.set(
+                this.rRacket.position.x - this.racketW - 10, 
+                this.tableH / 2 + 7,
+                this.rRacket.position.z
+            );
+            this.ballVelocity.set(0, 0, 0); // Stop the ball initially
+    
+            // Attach the ball to Player 1's racket
+            this.attachedToRacket = 'player1'; // To track the ball is attached to Player 1
+        }
+    }
 
 	stopAnimation() {
         if (this.animationFrameId !== null) {
@@ -416,6 +444,23 @@ class GameAPPS {
         }
     }
 
+    update() {
+        // If the ball is attached to a racket, move it with the racket
+        if (this.attachedToRacket === 'player1') {
+            this.ball.position.set(
+                this.racket.position.x + this.racketW + 10, 
+                this.tableH / 2 + 7,
+                this.racket.position.z
+            );
+        } else if (this.attachedToRacket === 'player2') {
+            this.ball.position.set(
+                this.rRacket.position.x - this.racketW - 10, 
+                this.tableH / 2 + 7,
+                this.rRacket.position.z
+            );
+        }
+    }
+
 	animate() {
         if (this.players.player2.score === 5)
 		{
@@ -430,6 +475,7 @@ class GameAPPS {
 		}
         this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
 
+        this.update();
         // Display score
         // updateScoreOnDis();
         // Function to move rackets within the table boundaries

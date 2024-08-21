@@ -4,17 +4,8 @@ change later from ws to wss and enable an HTTPS connection
 
 
 Game
+1) ball needs to start from racket when user scores need to implement for a remote
 
-0)need to create input field fro nickname for the opponent
-
-1) ball needs to start from racket when user scores
-
-2)Need to create a Tournament
-
-Modules to do list:
-
-• Major module: Standard user management, authentication, users across tournaments.
-◦ Users can select a unique display name to play the tournaments.
 
 1) • Major module: Live Chat.
 ◦ The user should be able to block other users. This way, they will see no more
@@ -22,6 +13,13 @@ messages from the account they blocked.
 ◦ The user should be able to invite other users to play a Pong game through the
 chat interface.
 ◦ The user should be able to access other players profiles through the chat interface.
+
+2)Need to create a Tournament
+
+Modules to do list:
+
+• Major module: Standard user management, authentication, users across tournaments.
+◦ Users can select a unique display name to play the tournaments.
 
 Modules: 6
 
