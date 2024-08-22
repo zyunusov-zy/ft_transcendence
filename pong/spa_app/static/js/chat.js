@@ -4,12 +4,12 @@ function switchToChatBox() {
 
 let chatSockets = {};
 
-function openChatBox(friend) {
+function openChatBox(friend, globApp) {
     let chatBox = document.getElementById(`chat-box-${friend}`);
     let background = document.getElementById('chatBoxBackground');
 
     if (!chatBox) {
-        chatBox = createChatBox(friend);
+        chatBox = createChatBox(friend, globApp);
     }
 
     // Open the chat box and show the background
@@ -33,7 +33,7 @@ function openChatBox(friend) {
     }
 }
 
-function createChatBox(friend) {
+function createChatBox(friend, globApp) {
     const chatContainer = document.getElementById('chatsBox');
 
     const chatBox = document.createElement('div');
@@ -67,14 +67,42 @@ function createChatBox(friend) {
     sendButton.addEventListener('click', () => sendMessage(friend));
     inputContainer.appendChild(sendButton);
 
-    const blockButton = document.createElement('button');
-    blockButton.innerText = 'Block';
-    blockButton.className = 'block-button';
-    blockButton.style.backgroundColor = 'red'; // Make the button red
-    blockButton.addEventListener('click', () => {
-        blockUser(friend, blockButton);
+    const ellipsisButton = document.createElement('button');
+    ellipsisButton.innerHTML = '&#x2026;'; // Unicode for vertical ellipsis
+    ellipsisButton.className = 'ellipsis-button';
+
+    // Dropdown menu container
+    const dropdownMenu = document.createElement('div');
+    dropdownMenu.className = 'dropdown-menu';
+    dropdownMenu.style.display = 'none'; // Initially hidden
+
+    // Dropdown menu options
+    const blockOption = document.createElement('div');
+    blockOption.innerText = 'Block';
+    blockOption.className = 'dropdown-option';
+    blockOption.addEventListener('click', () => blockUser(friend, blockOption));
+
+    const profileOption = document.createElement('div');
+    profileOption.innerText = 'Profile';
+    profileOption.className = 'dropdown-option';
+    profileOption.addEventListener('click', () => viewProfile(friend));
+
+    const playOption = document.createElement('div');
+    playOption.innerText = 'Play';
+    playOption.className = 'dropdown-option';
+    playOption.addEventListener('click', () => playGame(friend, globApp));
+
+    dropdownMenu.appendChild(blockOption);
+    dropdownMenu.appendChild(profileOption);
+    dropdownMenu.appendChild(playOption);
+
+    ellipsisButton.addEventListener('click', () => {
+        dropdownMenu.style.display = dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '' ? 'block' : 'none';
     });
-    inputContainer.appendChild(blockButton);
+
+    inputContainer.appendChild(ellipsisButton);
+
+    inputContainer.appendChild(dropdownMenu);
 
     chatBox.appendChild(inputContainer);
     chatContainer.appendChild(chatBox);
@@ -82,6 +110,23 @@ function createChatBox(friend) {
     switchToChatBox(); // Make sure this function is defined elsewhere
 
     return chatBox;
+}
+
+function blockUser(friend, blockOption) {
+    console.log(`Viewing profile of ${friend}`);
+}
+
+// Function to view user's profile
+function viewProfile(friend) {
+    console.log(`Viewing profile of ${friend}`);
+    // Implement profile viewing logic here
+}
+
+// Function to start a game with the user
+function playGame(friend, globApp) {
+    console.log("GAME REQ SENT");
+    console.log(globApp);
+    globApp.sendGameRequest(friend, 'Do you want to play a game?');
 }
 
 

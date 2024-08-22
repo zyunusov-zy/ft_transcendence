@@ -42,12 +42,12 @@ function initializeHome() {
     const requestsLink = document.getElementById('requestsLink');
     const historyLink =  document.getElementById('historyLink');
     const playLink = document.getElementById('playLink');
-
+    
     if ( !historyLink ||!addFriendLink || !closeOverlay || !overlay || !addFriendButton || !incomingRequestsBox 
         || !friendNameInput || !friendsBox || !requestsLink) {
-        console.error('Home page elements not found');
-        return;
-    }
+            console.error('Home page elements not found');
+            return;
+        }
     const globApp = new GlobApp();
     globApp.init();
     console.log("I AM HERESSSS");
@@ -188,7 +188,7 @@ function initializeHome() {
             const chatIcon = document.createElement('span');
             chatIcon.classList.add('chat-icon');
             chatIcon.innerHTML = '&#x1F4AC;'; // Unicode for chat bubble icon
-            chatIcon.addEventListener('click', () => openChatBox(friend.username));
+            chatIcon.addEventListener('click', () => openChatBox(friend.username, globApp));
 
             console.log(statusIcon);
             friendElem.appendChild(statusIcon);
