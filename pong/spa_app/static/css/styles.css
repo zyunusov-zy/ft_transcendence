@@ -714,6 +714,15 @@ body, html {
     box-sizing: border-box;
 }
 
+.block-button {
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
 /* Shadowed background for the chat box */
 .chat-box-background {
     position: fixed;

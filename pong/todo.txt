@@ -1,10 +1,9 @@
 Docker 
 change later from ws to wss and enable an HTTPS connection
 
-
-
 Game
-1) ball needs to start from racket when user scores need to implement for a remote
+problem need to spam space to throw the ball
+
 
 
 1) • Major module: Live Chat.

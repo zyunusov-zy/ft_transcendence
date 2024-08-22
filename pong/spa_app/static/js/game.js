@@ -17,8 +17,8 @@ class GameApp {
         this.assignedSide = null;
 
         this.keyState = {
-            left: { up: false, down: false },
-            right: { up: false, down: false }
+            left: { up: false, down: false, space: false },
+            right: { up: false, down: false, space: false }
         };
         this.lastBallUpdateTime = null;
         this.players = {};
@@ -67,6 +67,7 @@ class GameApp {
 
         this.animationFrameId = null;
         this.gameRunning = true; 
+        this.attachedToRacket = null;
     }
 
 	GameSocket(friendUsername) {
@@ -126,6 +127,8 @@ class GameApp {
     handleBallState(data) {
         this.ball.position.set(data.position.x, data.position.y, data.position.z);
         this.ballVelocity.set(data.velocity.x, data.velocity.y, data.velocity.z);
+        this.attachedToRacket = data.attachedToRacket;
+        // console.log("FROM SERVER: ", this.attachedToRacket);
     }
 
     updateScoreboard() {
@@ -191,9 +194,11 @@ class GameApp {
             const ballState = {
                 type: 'ball_state',
                 position: { x: this.ball.position.x, y: this.ball.position.y, z: this.ball.position.z },
-                velocity: { x: this.ballVelocity.x, y: this.ballVelocity.y, z: this.ballVelocity.z }
+                velocity: { x: this.ballVelocity.x, y: this.ballVelocity.y, z: this.ballVelocity.z },
+                attachedToRacket: this.attachedToRacket
             };
             this.gameSocket.send(JSON.stringify(ballState));
+            // console.log(ballState);
         } else {
             console.error('Game WebSocket is not open. Cannot send ball state.');
         }
@@ -296,6 +301,45 @@ class GameApp {
         document.addEventListener('keyup', (event) => this.onKeyUp(event));
     }
 
+    onKeyDown(event) {
+        if (event.code === 'Space') {
+            // console.log("ONSPACE");
+            // this.keyState[this.assignedSide][event.key === 'space'] = true;
+            // this.sendMovement(this.keyState[this.assignedSide]);
+            this.onSpace();
+        }
+        if ((this.assignedSide === 'left' || this.assignedSide === 'right') &&
+            (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+            this.keyState[this.assignedSide][event.key === 'ArrowUp' ? 'up' : 'down'] = true;
+            this.sendMovement(this.keyState[this.assignedSide]);
+        }
+
+        console.log(event.code);
+    }
+
+    onSpace()
+    {
+        if (this.attachedToRacket) {
+            console.log(this.assignedSide);
+            console.log(this.attachedToRacket);
+            if (this.assignedSide === 'left' && this.attachedToRacket === 'left') {
+                // Player 1 (left side) presses space and releases the ball
+                this.ballVelocity.set(4, 0, this.racket.position.z > 0 ? -4 : 4);
+                console.log("Setting ball velocity for Player 1:", this.ballVelocity);
+                this.attachedToRacket = null;
+                console.log("Player 1 released the ball", this.ballVelocity);
+                this.sendBallState();
+            } else if (this.assignedSide === 'right' && this.attachedToRacket === 'right') {
+                // Player 2 (right side) presses space and releases the ball
+                
+                this.ballVelocity.set(-4, 0, this.rRacket.position.z > 0 ? -4 : 4);
+                console.log("Setting ball velocity for Player 2:", this.ballVelocity);
+                this.attachedToRacket = null;
+                console.log("Player 2 released the ball", this.ballVelocity);
+                this.sendBallState();
+            }
+        }
+    }
     // onResize() {
     //     const newWidth = window.innerWidth;
     //     const newHeight = window.innerHeight;
@@ -304,13 +348,6 @@ class GameApp {
     //     this.renderer.setSize(newWidth, newHeight);
     // }
 
-    onKeyDown(event) {
-        if ((this.assignedSide === 'left' || this.assignedSide === 'right') &&
-            (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
-            this.keyState[this.assignedSide][event.key === 'ArrowUp' ? 'up' : 'down'] = true;
-            this.sendMovement(this.keyState[this.assignedSide]);
-        }
-    }
 
     onKeyUp(event) {
         if ((this.assignedSide === 'left' || this.assignedSide === 'right') &&
@@ -335,7 +372,7 @@ class GameApp {
                 this.rRacket.position.z += 5; // Fixed movement direction
                 // console.log('Moving right racket down:', rRacket.position.z);
             }
-            console.log("CALLED");
+            // console.log("CALLED");
             if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
                 this.racket.translateZ(-5);
                 // console.log('Moving left racket up:', racket.position.z);
@@ -344,7 +381,16 @@ class GameApp {
                 this.racket.translateZ(5);
                 // console.log('Moving left racket down:', racket.position.z);
             }
-    
+            
+            if (this.attachedToRacket === 'left') {
+                this.ball.position.set(
+                    this.racket.position.x + this.racketW + 10, 
+                    this.tableH / 2 + 7,
+                    this.racket.position.z
+                );
+                // console.log(this.ballVelocity);
+                this.sendBallState();
+            }
             // Move opponent's right racket based on opponentKeyState
         } else if (this.assignedSide === 'right') {
             // console.log(keyState);
@@ -368,7 +414,18 @@ class GameApp {
                 this.racket.position.z += 5; // Fixed movement direction
                 // console.log('Moving left racket down:', racket.position.z);
             }
+            if (this.attachedToRacket === 'right') {
+                this.ball.position.set(
+                    this.rRacket.position.x - this.racketW - 10, 
+                    this.tableH / 2 + 7,
+                    this.rRacket.position.z
+                );
+                // console.log(this.ballVelocity);
+                this.sendBallState();
+            }
         }
+
+        // this.update();
     }
 
     moveBall()
@@ -431,11 +488,60 @@ class GameApp {
             this.ballVelocity.x *= -1;
         }
     }
-
+    
     resetBall(sideToInc) {
-        this.ball.position.set(0, this.tableH / 2 + 7, -(this.tableD / 4));
+        console.log("I AM HERE: ", sideToInc);
         this.sendScoreUpdate(sideToInc);
+        if (sideToInc === 'left')
+        {
+            this.ball.position.set(
+                this.rRacket.position.x - this.racketW - 10, 
+                this.tableH / 2 + 7,
+                this.rRacket.position.z
+            );
+            this.ballVelocity.set(0, 0, 0);
+            
+            this.attachedToRacket = 'right';
+        }else if (sideToInc === 'right') {
+            
+            this.ball.position.set(
+                this.racket.position.x + this.racketW + 10, 
+                this.tableH / 2 + 7,
+                this.racket.position.z
+            );
+
+            this.ballVelocity.set(0, 0, 0); // Stop the ball initially
+    
+            // Attach the ball to Player 1's racket
+            this.attachedToRacket = 'left';
+        }
+        console.log("SIDE TO INC: " ,sideToInc);
+        console.log("ATTACHED SIDE IS: ", this.attachedToRacket);
+        this.sendBallState();
     }
+
+    update() {
+        // console.log("WHAT IS HAPPENING WITH UPDATE?");
+        // If the ball is attached to a racket, move it with the racket
+        if (this.attachedToRacket === 'left') {
+            this.ball.position.set(
+                this.racket.position.x + this.racketW + 10, 
+                this.tableH / 2 + 7,
+                this.racket.position.z
+            );
+            // console.log(this.ballVelocity);
+            this.sendBallState();
+        } else if (this.attachedToRacket === 'right') {
+            this.ball.position.set(
+                this.rRacket.position.x - this.racketW - 10, 
+                this.tableH / 2 + 7,
+                this.rRacket.position.z
+            );
+            // console.log(this.ballVelocity);
+            this.sendBallState();
+        }
+    }
+
 
     stopAnimation() {
         if (this.animationFrameId !== null) {
@@ -525,6 +631,7 @@ class GameApp {
         this.gameSocket.close();
         this.gameSocket = null;
         this.assignedSide = null;
+        this.attachedToRacket = null;
         const gameCon = document.getElementById('gameCon');
         while (gameCon.firstChild) {
             gameCon.removeChild(gameCon.firstChild);
@@ -548,13 +655,14 @@ class GameApp {
         // updateScoreOnDis();
         // Function to move rackets within the table boundaries
         this.moveRackets();
+        // this.update();
         this.moveBall();
 
-        const now = Date.now();
-        if (now - this.lastBallUpdateTime > 300) {  // Adjust the interval as needed
-            this.sendBallState();
-            this.lastBallUpdateTime = now;
-        }
+        // const now = Date.now();
+        // if (now - this.lastBallUpdateTime > 300) {  // Adjust the interval as needed
+        //     this.sendBallState();
+        //     this.lastBallUpdateTime = now;
+        // }
 
         // Racket position to stay within table boundaries
         this.racket.position.y = Math.max(-this.tableH / 2 + this.halfRacketHeight, Math.min(this.tableH / 2 - this.halfRacketHeight, this.racket.position.y));

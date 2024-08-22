@@ -332,21 +332,44 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"User {self.user} connected to game room: {self.room_group_name} on side {self.side}")
 
     async def disconnect(self, close_code):
+        print(f"[DEBUG] Disconnect method called for user: {self.user}")
+        print(f"[DEBUG] Print {cache.get(self.cache_key)}")
+
+         # Retrieve the current disconnect counter from the cache
+        disconnect_count_key = f"{self.cache_key}_disconnect_count"
+        disconnect_count = cache.get(disconnect_count_key) or 0
+        disconnect_count += 1
+        cache.set(disconnect_count_key, disconnect_count, None)
+
+        print(f"[DEBUG] Disconnect count for {self.room_name}: {disconnect_count}")
+        print(f"[DEBUG] Cached value for {self.cache_key}: {cache.get(self.cache_key)}")
+
         if not cache.get(self.cache_key):
-            cache.set(self.cache_key, True, None)
+            if self.players['left'].score == 0 and self.players['right'].score == 0:
+                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
+            else:
+                # Proceed to save the game history
+                cache.set(self.cache_key, True, None)
+                print(f"[DEBUG] Setting cache key {self.cache_key}")
 
-            winner = await database_sync_to_async(User.objects.get)(username=self.players['left'].username if self.players['left'].winner else self.players['right'].username)
+                winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
+                winner = await database_sync_to_async(User.objects.get)(username=winner_username)
 
-            game_record = await database_sync_to_async(GameHistory.objects.create)(
-                player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
-                player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
-                score_player1=self.players['left'].score,
-                score_player2=self.players['right'].score,
-                winner=winner
-            )
+                game_record = await database_sync_to_async(GameHistory.objects.create)(
+                    player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
+                    player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
+                    score_player1=self.players['left'].score,
+                    score_player2=self.players['right'].score,
+                    winner=winner
+                )
+                print(f"[DEBUG] Game record created with ID: {game_record.id}")
 
-            print(f"[DEBUG] Game record created with ID: {game_record.id}")
-
+        if disconnect_count >= 2:
+            print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
+        
+            # Reset the game cache and disconnect counter
+            cache.delete(self.cache_key)
+            cache.delete(disconnect_count_key)
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
@@ -358,6 +381,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+
 
     async def receive(self, text_data):
         # print(f"Received data from {self.user}: {text_data}")
@@ -415,7 +439,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'send_ball_state',
                     'position': message['position'],
-                    'velocity': message['velocity']
+                    'velocity': message['velocity'],
+                    'attachedToRacket': message.get('attachedToRacket', None)
                 }
             )
         # print(f"Sent message to {self.user}: {message}")
@@ -425,7 +450,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'ball_state',
             'position': event['position'],
-            'velocity': event['velocity']
+            'velocity': event['velocity'],
+            'attachedToRacket': event.get('attachedToRacket', None)
         }))
 
     async def score_update(self, event):

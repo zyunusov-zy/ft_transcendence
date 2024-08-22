@@ -20,7 +20,7 @@ class GlobApp {
                 console.log("REQUEST GOTTT");
                 this.displayGameRequest(data.sender_id, data.sender_username, data.game_request);
             } else if (data.type === 'game_response') {
-                alert('Game request ' + data.response + ' by ' + data.responder_username);
+                // alert('Game request ' + data.response + ' by ' + data.responder_username);
                 if (data.response === 'accepted') {
                     console.log("Game request accepted");
                     this.gameVis(data.responder_username);

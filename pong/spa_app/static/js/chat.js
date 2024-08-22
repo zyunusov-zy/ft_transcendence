@@ -67,6 +67,15 @@ function createChatBox(friend) {
     sendButton.addEventListener('click', () => sendMessage(friend));
     inputContainer.appendChild(sendButton);
 
+    const blockButton = document.createElement('button');
+    blockButton.innerText = 'Block';
+    blockButton.className = 'block-button';
+    blockButton.style.backgroundColor = 'red'; // Make the button red
+    blockButton.addEventListener('click', () => {
+        blockUser(friend, blockButton);
+    });
+    inputContainer.appendChild(blockButton);
+
     chatBox.appendChild(inputContainer);
     chatContainer.appendChild(chatBox);
 
