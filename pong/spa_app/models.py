@@ -63,9 +63,18 @@ class Message(models.Model):
     receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    blocked = models.BooleanField(default=False)  # New field to indicate if the message was sent while blocked
 
     def __str__(self):
         return f"From {self.sender.username} to {self.receiver.username} ({self.timestamp})"
+
+class Block(models.Model):
+    blocker = models.ForeignKey(User, related_name='blocking', on_delete=models.CASCADE)
+    blocked = models.ForeignKey(User, related_name='blocked_by', on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.blocker.username} blocked {self.blocked.username}"
 
 class GameHistory(models.Model):
     player1 = models.ForeignKey(User, related_name='games_as_player1', on_delete=models.CASCADE)

@@ -10,7 +10,7 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode,  urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from .models import UserProfile, Message, FriendRequest, Friendship, GameHistory
+from .models import UserProfile, Message, FriendRequest, Friendship, GameHistory, Block
 import re
 import os 
 from django.conf import settings
@@ -26,7 +26,7 @@ from django.shortcuts import get_object_or_404
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.db import models
-from .consumers import update_status_and_notify_friends
+from .consumers import update_status_and_notify_friends, sanitize_group_name
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -385,20 +385,20 @@ class UpdateStatusView(View):
 class MessagesListView(View):
     def get(self, request, username):
         print("HERE!!!!!!!!!!")
-        # Retrieve logged-in user
         user = request.user
-        # Retrieve other user based on username
         other_user = get_object_or_404(User, username=username)
 
-        # Fetch messages exchanged between the users
+        has_blocked = Block.objects.filter(blocker=user, blocked=other_user).exists()
+
         messages = Message.objects.filter(
             (Q(sender=user) & Q(receiver=other_user)) |
             (Q(sender=other_user) & Q(receiver=user))
         ).order_by('timestamp')
 
-        # Serialize messages into JSON format
         message_list = []
         for message in messages:
+            if has_blocked and message.sender == other_user:
+                continue 
             message_list.append({
                 'sender': message.sender.username,
                 'receiver': message.receiver.username,
@@ -452,6 +452,46 @@ class SendMessageView(View):
         except Exception as e:
             print(f"Exception: {e}")
             return JsonResponse({'error': 'Internal server error.'}, status=500)
+
+
+@method_decorator(login_required, name='dispatch')
+class BlockUserView(View):
+    def post(self, request, friend_username):
+        try:
+            friend = get_object_or_404(User, username=friend_username)
+            Block.objects.get_or_create(blocker=request.user, blocked=friend)
+            return JsonResponse({"success": True, "message": f"You have blocked {friend_username}"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+@method_decorator(login_required, name='dispatch')
+class UnblockUserView(View):
+    def post(self, request, friend_username):
+        try:
+            friend = get_object_or_404(User, username=friend_username)
+            block = Block.objects.get(blocker=request.user, blocked=friend)
+            block.delete()
+
+            blocked_messages = Message.objects.filter(sender=friend, receiver=request.user, blocked=True)
+
+            channel_layer = get_channel_layer()
+            for message in blocked_messages:
+                async_to_sync(channel_layer.group_send)(
+                    sanitize_group_name(f"chat_{''.join(sorted([request.user.username, friend_username]))}"),
+                    {
+                        'type': 'chat_message',
+                        'message': message.content,
+                        'sender': message.sender.username,
+                    }
+                )
+                message.blocked = False
+                message.save()
+
+            return JsonResponse({"success": True, "message": f"You have unblocked {friend_username}"})
+        except Block.DoesNotExist:
+            return JsonResponse({"error": "You have not blocked this user."}, status=404)
+        except User.DoesNotExist:
+            return JsonResponse({"error": "User not found."}, status=404)
 
 
 @method_decorator(login_required, name='dispatch')

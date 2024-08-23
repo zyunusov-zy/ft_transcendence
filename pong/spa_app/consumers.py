@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from .models import Message, GameHistory, UserProfile, Friendship
+from .models import Message, GameHistory, UserProfile, Friendship, Block
 from channels.db import database_sync_to_async
 from django.core.cache import cache
 from channels.layers import get_channel_layer
@@ -17,16 +17,13 @@ def update_status_and_notify_friends(user, status):
     profile.status = status
     profile.save()
 
-    # Notify the user's friends
     notify_friends_status_change(user, status)
 
 def notify_friends_status_change(user, status):
-    # Get the user's friends
     try:
         friendship = Friendship.objects.get(current_user=user)
         friends = friendship.users.all()
 
-        # Notify each friend about the user's status change
         channel_layer = get_channel_layer()
         for friend in friends:
             friend_channel_name = sanitize_group_name(f"user_{friend.id}")
@@ -42,9 +39,7 @@ def notify_friends_status_change(user, status):
         pass
 
 def sanitize_group_name(name):
-    # Remove characters that are not alphanumeric, hyphens, underscores, or periods
     sanitized_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '', name)
-    # Ensure the name is no longer than 100 characters
     return sanitized_name[:100]
 
 class GlobalConsumer(AsyncWebsocketConsumer):
@@ -52,7 +47,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         self.user = self.scope['user']
 
         if self.user.is_authenticated:
-            # Sanitize the group name
             self.group_name = sanitize_group_name(f"user_{self.user.id}")
 
             print(f"User {self.user.id} connecting to user-specific channel {self.group_name}")
@@ -99,7 +93,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
 
         if receiver_username and game_request:
             try:
-                # Sanitize the recipient's group name
                 receiver = await sync_to_async(User.objects.get)(username=receiver_username)
                 receiver_profile = await sync_to_async(UserProfile.objects.get)(user=receiver)
 
@@ -230,40 +223,39 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         print(f"Received message from {sender_username} to {receiver_username}: {message}")
 
-        # Fetch the sender and receiver from the database
         sender = await sync_to_async(User.objects.get)(username=sender_username)
         receiver = await sync_to_async(User.objects.get)(username=receiver_username)
 
-        # Save the message to the database
+        is_blocked = await sync_to_async(Block.objects.filter(blocker=receiver, blocked=sender).exists)()
         message_instance = await sync_to_async(Message.objects.create)(
-            sender=sender, receiver=receiver, content=message
+            sender=sender, receiver=receiver, content=message, blocked=is_blocked
         )
         print(f"Message saved to database from {sender_username} to {receiver_username}: {message}")
+        if not is_blocked:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'sender': sender_username,
+                }
+            )
+            print(f"Message sent to chat room group {self.room_group_name}")
 
-        # Send the message to the chat room group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'sender': sender_username,
-            }
-        )
-        print(f"Message sent to chat room group {self.room_group_name}")
+            recipient_channel_name = sanitize_group_name(f"user_{receiver.id}")
+            print(f"Recipient channel name: {recipient_channel_name}")
 
-        # Send a notification to the receiver's user-specific channel
-        recipient_channel_name = sanitize_group_name(f"user_{receiver.id}")
-        print(f"Recipient channel name: {recipient_channel_name}")
-
-        print(f"Attempting to send notification to channel: {recipient_channel_name}")
-        await self.channel_layer.group_send(
-            recipient_channel_name,
-            {
-                'type': 'notify_user',
-                'message': message,
-            }
-        )
-        print(f"Notification sent to user-specific channel {recipient_channel_name}")
+            print(f"Attempting to send notification to channel: {recipient_channel_name}")
+            await self.channel_layer.group_send(
+                recipient_channel_name,
+                {
+                    'type': 'notify_user',
+                    'message': message,
+                }
+            )
+            print(f"Notification sent to user-specific channel {recipient_channel_name}")
+        else:
+            print(f"Notification and message delivery skipped because {sender_username} is blocked by {receiver_username}")
 
     async def chat_message(self, event):
         message = event['message']
@@ -271,7 +263,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         print(f"Broadcasting message from {sender}: {message}")
 
-        # Send the message to the WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
             'sender': sender,

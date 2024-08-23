@@ -35,7 +35,11 @@ from .views import (
     LogoutView,
     CheckAuthenticationView,
     SaveGameHistoryView,
-    FriendProfileView
+    FriendProfileView,
+
+    # Block
+    UnblockUserView,
+    BlockUserView
 )
 
 
@@ -66,4 +70,6 @@ urlpatterns = [
     path('save-game-history/', SaveGameHistoryView.as_view(), name='save-game-history'),
     path('api/friend-profile/<str:username>/', FriendProfileView.as_view(), name='friend-profile'),
     path('update-status/', UpdateStatusView.as_view(), name='update_status'),
+    path('block/<str:friend_username>/', BlockUserView.as_view(), name='block_user'),
+    path('unblock/<str:friend_username>/', UnblockUserView.as_view(), name='unblock_user'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

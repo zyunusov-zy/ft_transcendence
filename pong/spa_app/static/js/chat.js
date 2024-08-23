@@ -12,14 +12,11 @@ function openChatBox(friend, globApp) {
         chatBox = createChatBox(friend, globApp);
     }
 
-    // Open the chat box and show the background
     chatBox.classList.add('active');
     background.classList.add('active');
 
-    // Fetch and display previous messages
     fetchMessages(friend);
 
-    // Establish WebSocket connection if not already connected
     if (!chatSockets[friend]) {
         establishWebSocketConnection(friend);
     }
@@ -37,7 +34,7 @@ function createChatBox(friend, globApp) {
     const chatContainer = document.getElementById('chatsBox');
 
     const chatBox = document.createElement('div');
-    chatBox.id = `chat-box-${friend}`; // Fixed ID attribute
+    chatBox.id = `chat-box-${friend}`;
     chatBox.className = 'chat-box';
 
     const closeButton = document.createElement('button');
@@ -68,16 +65,14 @@ function createChatBox(friend, globApp) {
     inputContainer.appendChild(sendButton);
 
     const ellipsisButton = document.createElement('button');
-    ellipsisButton.innerHTML = '&#x2026;'; // Unicode for vertical ellipsis
+    ellipsisButton.innerHTML = '&#x2026;';
     ellipsisButton.className = 'ellipsis-button';
 
-    // Dropdown menu container
     const dropdownMenu = document.createElement('div');
     dropdownMenu.className = 'dropdown-menu';
     dropdownMenu.id = 'dropdownMenu';
-    dropdownMenu.style.display = 'none'; // Initially hidden
+    dropdownMenu.style.display = 'none';
 
-    // Dropdown menu options
     const blockOption = document.createElement('div');
     blockOption.innerText = 'Block';
     blockOption.className = 'dropdown-option';
@@ -114,16 +109,38 @@ function createChatBox(friend, globApp) {
     chatBox.appendChild(inputContainer);
     chatContainer.appendChild(chatBox);
 
-    switchToChatBox(); // Make sure this function is defined elsewhere
+    switchToChatBox();
 
     return chatBox;
 }
 
 function blockUser(friend, blockOption) {
-    console.log(`Viewing profile of ${friend}`);
+    let dropMen = document.getElementById('dropdownMenu');
+    dropMen.style.display = 'none';
+    const isBlocking = blockOption.innerText === 'Block';
+    const actionUrl = isBlocking ? `/block/${friend}/` : `/unblock/${friend}/`;
+
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            blockOption.innerText = isBlocking ? 'Unblock' : 'Block';
+            alert(`${isBlocking ? 'Blocked' : 'Unblocked'} ${friend}`);
+        } else {
+            alert(data.error || "An error occurred.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
 }
 
-// Function to view user's profile
 function viewProfile(friend) {
     let dropMen = document.getElementById('dropdownMenu');
     dropMen.style.display = 'none';
@@ -150,7 +167,7 @@ function viewProfile(friend) {
                 </svg>
             `;
             closeButton.onclick = () => {
-                profileBox.style.display = 'none'; // Hide the profile box when clicked
+                profileBox.style.display = 'none';
             };
             profileBox.appendChild(closeButton);
 
@@ -158,44 +175,34 @@ function viewProfile(friend) {
             const mainTop = document.createElement('div');
             mainTop.className = 'main-topP';
 
-            // Create game-info container
             const gameInfo = document.createElement('div');
             gameInfo.className = 'game-infoP';
 
-            // Create game-links container
             const gameLinks = document.createElement('div');
             gameLinks.className = 'game-links';
 
-            // Create history link
             const historyLink = document.createElement('a');
             historyLink.id = 'historyLink';
             historyLink.className = 'text-decoration-none';
             historyLink.href = '#';
             historyLink.textContent = 'History';
 
-            // Append history link to game-links
             gameLinks.appendChild(historyLink);
 
-            // Append game-links to game-info
             gameInfo.appendChild(gameLinks);
 
-            // Append game-info to main-top
             mainTop.appendChild(gameInfo);
 
-            // Create person-info container
             const personInfo = document.createElement('div');
             personInfo.className = 'person-infoP';
 
-            // Create player-status container
             const playerStatus = document.createElement('div');
             playerStatus.className = 'player-status';
 
-            // Create nickname element
             const nickname = document.createElement('h5');
             nickname.id = 'nickname';
             nickname.textContent = friend.nickname;
 
-            // Create status-dropdown container
             const statusDropdown = document.createElement('div');
             statusDropdown.className = 'status-dropdown';
 
@@ -231,34 +238,27 @@ function viewProfile(friend) {
                     </svg>`;
             }
 
-            // Append the status and icon to the statusDropdown
             statusDropdown.innerHTML = `
                 <span>
                     ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)} 
                     ${statusIcon}
                 </span>`;
 
-            // Append nickname and status-dropdown to player-status
             playerStatus.appendChild(nickname);
             playerStatus.appendChild(statusDropdown);
 
-            // Append player-status to person-info
             personInfo.appendChild(playerStatus);
 
-            // Create and append avatar image
             const avatar = document.createElement('img');
             avatar.id = 'avatar';
             avatar.alt = 'Player Avatar';
             avatar.src = friend.avatar;
             personInfo.appendChild(avatar);
 
-            // Append person-info to main-top
             mainTop.appendChild(personInfo);
 
-            // Append main-top to profileBox
             profileBox.appendChild(mainTop);
 
-            // Create and append history-box container
             const historyBox = document.createElement('div');
             historyBox.className = 'history-boxP';
             historyBox.id = 'historyBox';
@@ -267,11 +267,9 @@ function viewProfile(friend) {
                 const gameRecord = document.createElement('div');
                 gameRecord.classList.add('game-recordP');
             
-                // Determine the classes based on the winner
                 const player1Class = game.player1 === game.winner ? 'winner' : 'loser';
                 const player2Class = game.player2 === game.winner ? 'winner' : 'loser';
             
-                // Create the inner HTML structure for each game record
                 gameRecord.innerHTML = `
                     <div class="game-header">
                         <div class="game-date">${game.date_played}</div>
@@ -283,11 +281,9 @@ function viewProfile(friend) {
                     </div>
                 `;
             
-                // Append each game record to the history box
                 historyBox.appendChild(gameRecord);
             });
 
-            // Append history-box to profileBox
             profileBox.appendChild(historyBox);
 
             profileBox.style.display = 'block';
@@ -297,7 +293,6 @@ function viewProfile(friend) {
         });
 }
 
-// Function to start a game with the user
 function playGame(friend, globApp) {
     let dropMen = document.getElementById('dropdownMenu');
     dropMen.style.display = 'none';
@@ -327,7 +322,7 @@ async function fetchMessages(friend) {
         messageElement.innerHTML = `<strong>${message.sender}:</strong> ${message.content}`;
         messagesContainer.appendChild(messageElement);
     });
-    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Auto scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function sendMessage(friend) {
@@ -342,19 +337,17 @@ function sendMessage(friend) {
         content: messageContent
     };
 
-    // Send the message via WebSocket
     if (chatSockets[friend]) {
         console.log("HEEEEEEEWWWWWWWWWW");
         chatSockets[friend].send(JSON.stringify({
             'message': messageContent
         }));
     } else {
-        // Fallback to HTTP POST if WebSocket is not available
         fetch('/api/message/send/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken') // Ensure you pass the CSRF token correctly
+                'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify(message)
         })
@@ -385,7 +378,7 @@ function establishWebSocketConnection(friend) {
         const data = JSON.parse(event.data);
         const message = data['message'];
         const sender = data['sender'];
-        console.log('Message received:', data); // Add this line for debugging
+        console.log('Message received:', data);
         displayIncomingMessage(friend, message, sender);
 
         if (document.hidden || !chatBoxVisible(friend)) {
@@ -409,7 +402,7 @@ function establishWebSocketConnection(friend) {
 function displayIncomingMessage(friend, message, sender) {
     const chatBox = document.getElementById(`chat-box-${friend}`);
     if (!chatBox) {
-        console.error(`Chat box for ${friend} not found.`); // Add this line for debugging
+        console.error(`Chat box for ${friend} not found.`);
         return;
     }
     const messagesContainer = chatBox.querySelector('.messages');
@@ -423,14 +416,14 @@ function displayIncomingMessage(friend, message, sender) {
     messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
     messagesContainer.appendChild(messageElement);
 
-    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Auto scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function showNotification(title, message) {
     if (Notification.permission === 'granted') {
         new Notification(title, {
             body: message,
-            icon: 'path/to/icon.png' // Optional: path to an icon image
+            icon: 'path/to/icon.png'
         });
     }
 }
@@ -446,10 +439,9 @@ function closeChatBox(friend) {
 
     if (chatBox) {
         chatBox.classList.remove('active');
-        chatBox.remove(); // Remove the chat box from the DOM
+        chatBox.remove();
     }
 
-    // Hide the shadowed background
     background.classList.remove('active');
     document.querySelector('.chats-box').style.display = 'none';
 

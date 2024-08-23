@@ -9,9 +9,6 @@ problem need to spam space to throw the ball
 1) • Major module: Live Chat.
 ◦ The user should be able to block other users. This way, they will see no more
 messages from the account they blocked.
-◦ The user should be able to invite other users to play a Pong game through the
-chat interface.
-◦ The user should be able to access other players profiles through the chat interface.
 
 2)Need to create a Tournament
 

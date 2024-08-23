@@ -14,7 +14,7 @@ const getCookie = (name) => {
 };
 
 const initialize = async () => {
-    await fetchCSRFToken('/fetch-csrf-token/'); // Fetch the CSRF token
+    await fetchCSRFToken('/fetch-csrf-token/');
 };
 
 const fetchCSRFToken = async () => {
@@ -28,5 +28,4 @@ const fetchCSRFToken = async () => {
     }
 };
 
-// Attach the handler after the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", initialize);
