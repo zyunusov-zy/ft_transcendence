@@ -1112,3 +1112,108 @@ body, html {
 #opponentForm button:hover {
     background-color: #0056b3;  /* Darker blue on hover */
 }
+
+/* Profile */
+
+.profile-box {
+    position: fixed; /* Fixed position to keep it above other content */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the box on the screen */
+    background-color: #C33149; /* Background color for visibility */
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for the "popup" effect */
+    z-index: 1000; /* High z-index to ensure it's above the chat */
+    width: 700px; /* Adjust width as needed */
+    height: 70vh;
+    border-radius: 10px; /* Optional rounded corners */
+}
+
+
+.main-topP{
+    width: 100%;
+    border-bottom: 2px solid #ccc;
+    background-color: #C33149;
+    color: #100C4F;
+    display: flex;
+    height: 30%;
+    /* flex-direction: column; */
+}
+
+.person-infoP {
+    width: 70%;
+    margin: 5px 1em 5px 2em;
+    border-radius: 1em;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    padding-right: 1em;
+    gap: 2.5em;
+    flex-wrap: wrap;
+}
+
+.person-infoP > img
+{
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    background-color: white;
+}
+
+.history-boxP
+{
+    margin: 0.5em;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 2em rgb(69, 69, 69);
+    height: 70%;
+    display: flex;
+    justify-content: flex-start; /* Changed to flex-start to align items to the top */
+    align-items: center;
+    flex-direction: column;
+    border-radius: 0.5em;
+    gap: 1em;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: 0.5em;
+}
+
+.game-infoP{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+    width: 50%;
+    justify-content: end;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.close-btn svg {
+    fill: #131426;
+    width: 24px;
+    height: 24px;
+}
+
+
+.game-recordP {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #131426;
+    color: white;
+    width: 70%;
+}

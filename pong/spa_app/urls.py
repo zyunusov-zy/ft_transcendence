@@ -34,7 +34,8 @@ from .views import (
     # Logout
     LogoutView,
     CheckAuthenticationView,
-    SaveGameHistoryView
+    SaveGameHistoryView,
+    FriendProfileView
 )
 
 
@@ -63,5 +64,6 @@ urlpatterns = [
     path('api/game-history/', GameHistoryView.as_view(), name='game-history'),
     path('api/logout/', LogoutView.as_view(), name='logout'),
     path('save-game-history/', SaveGameHistoryView.as_view(), name='save-game-history'),
+    path('api/friend-profile/<str:username>/', FriendProfileView.as_view(), name='friend-profile'),
     path('update-status/', UpdateStatusView.as_view(), name='update_status'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

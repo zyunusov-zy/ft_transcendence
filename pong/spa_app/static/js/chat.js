@@ -74,23 +74,30 @@ function createChatBox(friend, globApp) {
     // Dropdown menu container
     const dropdownMenu = document.createElement('div');
     dropdownMenu.className = 'dropdown-menu';
+    dropdownMenu.id = 'dropdownMenu';
     dropdownMenu.style.display = 'none'; // Initially hidden
 
     // Dropdown menu options
     const blockOption = document.createElement('div');
     blockOption.innerText = 'Block';
     blockOption.className = 'dropdown-option';
-    blockOption.addEventListener('click', () => blockUser(friend, blockOption));
+    blockOption.addEventListener('click', () => {
+        blockUser(friend, blockOption)
+    });
 
     const profileOption = document.createElement('div');
     profileOption.innerText = 'Profile';
     profileOption.className = 'dropdown-option';
-    profileOption.addEventListener('click', () => viewProfile(friend));
+    profileOption.addEventListener('click', () => {
+        viewProfile(friend)
+    });
 
     const playOption = document.createElement('div');
     playOption.innerText = 'Play';
     playOption.className = 'dropdown-option';
-    playOption.addEventListener('click', () => playGame(friend, globApp));
+    playOption.addEventListener('click', () => {
+        playGame(friend, globApp)
+    });
 
     dropdownMenu.appendChild(blockOption);
     dropdownMenu.appendChild(profileOption);
@@ -118,12 +125,182 @@ function blockUser(friend, blockOption) {
 
 // Function to view user's profile
 function viewProfile(friend) {
-    console.log(`Viewing profile of ${friend}`);
-    // Implement profile viewing logic here
+    let dropMen = document.getElementById('dropdownMenu');
+    dropMen.style.display = 'none';
+    let mainP = document.getElementById('mainPage');
+    let profileBox = document.getElementById('profileBox');
+    if (!profileBox) {
+        profileBox = document.createElement('div');
+        profileBox.id = 'profileBox';
+        profileBox.className = 'profile-box';
+        console.log(profileBox);
+        mainP.appendChild(profileBox);
+    }
+    fetch(`/api/friend-profile/${friend}/`)
+        .then(response => response.json())
+        .then(friend => {
+            profileBox.innerHTML = '';
+
+            const closeButton = document.createElement('button');
+            closeButton.className = 'close-btn';
+            closeButton.innerHTML = `
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#000000" width="24" height="24">
+                    <path fill="none" d="M0 0h24v24H0z"/>
+                    <path d="M18.3 5.71a1 1 0 00-1.42-1.42L12 9.59 7.12 4.71a1 1 0 10-1.42 1.42L10.59 12l-4.88 4.88a1 1 0 101.42 1.42L12 14.41l4.88 4.88a1 1 0 001.42-1.42L13.41 12l4.88-4.88z"/>
+                </svg>
+            `;
+            closeButton.onclick = () => {
+                profileBox.style.display = 'none'; // Hide the profile box when clicked
+            };
+            profileBox.appendChild(closeButton);
+
+
+            const mainTop = document.createElement('div');
+            mainTop.className = 'main-topP';
+
+            // Create game-info container
+            const gameInfo = document.createElement('div');
+            gameInfo.className = 'game-infoP';
+
+            // Create game-links container
+            const gameLinks = document.createElement('div');
+            gameLinks.className = 'game-links';
+
+            // Create history link
+            const historyLink = document.createElement('a');
+            historyLink.id = 'historyLink';
+            historyLink.className = 'text-decoration-none';
+            historyLink.href = '#';
+            historyLink.textContent = 'History';
+
+            // Append history link to game-links
+            gameLinks.appendChild(historyLink);
+
+            // Append game-links to game-info
+            gameInfo.appendChild(gameLinks);
+
+            // Append game-info to main-top
+            mainTop.appendChild(gameInfo);
+
+            // Create person-info container
+            const personInfo = document.createElement('div');
+            personInfo.className = 'person-infoP';
+
+            // Create player-status container
+            const playerStatus = document.createElement('div');
+            playerStatus.className = 'player-status';
+
+            // Create nickname element
+            const nickname = document.createElement('h5');
+            nickname.id = 'nickname';
+            nickname.textContent = friend.nickname;
+
+            // Create status-dropdown container
+            const statusDropdown = document.createElement('div');
+            statusDropdown.className = 'status-dropdown';
+
+            let statusIcon = '';
+            const newStatus = friend.status || 'offline'; // Default to 'offline' if no status
+
+            if (newStatus === 'online') {
+                statusIcon = `
+                    <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000">
+                        <circle cx="63.93" cy="64" r="60" fill="#689f38"></circle>
+                        <circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle>
+                        <path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path>
+                    </svg>`;
+            } else if (newStatus === 'offline') {
+                statusIcon = `
+                    <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000">
+                        <circle cx="63.93" cy="64" r="60" fill="#c33"></circle>
+                        <circle cx="60.03" cy="63.1" r="56.1" fill="#f44336"></circle>
+                        <path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#ff8a80"></path>
+                    </svg>`;
+            } else if (newStatus === 'in_game') {
+                statusIcon = `
+                    <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" fill="#1E88E5">
+                        <circle cx="64" cy="64" r="60" fill="#42A5F5"></circle>
+                        <circle cx="64" cy="64" r="56" fill="#90CAF9"></circle>
+                    </svg>`;
+            } else if (newStatus === 'available') {
+                statusIcon = `
+                    <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000">
+                        <circle cx="63.93" cy="64" r="60" fill="#689f38"></circle>
+                        <circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle>
+                        <path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path>
+                    </svg>`;
+            }
+
+            // Append the status and icon to the statusDropdown
+            statusDropdown.innerHTML = `
+                <span>
+                    ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)} 
+                    ${statusIcon}
+                </span>`;
+
+            // Append nickname and status-dropdown to player-status
+            playerStatus.appendChild(nickname);
+            playerStatus.appendChild(statusDropdown);
+
+            // Append player-status to person-info
+            personInfo.appendChild(playerStatus);
+
+            // Create and append avatar image
+            const avatar = document.createElement('img');
+            avatar.id = 'avatar';
+            avatar.alt = 'Player Avatar';
+            avatar.src = friend.avatar;
+            personInfo.appendChild(avatar);
+
+            // Append person-info to main-top
+            mainTop.appendChild(personInfo);
+
+            // Append main-top to profileBox
+            profileBox.appendChild(mainTop);
+
+            // Create and append history-box container
+            const historyBox = document.createElement('div');
+            historyBox.className = 'history-boxP';
+            historyBox.id = 'historyBox';
+
+            friend.history.forEach(game => {
+                const gameRecord = document.createElement('div');
+                gameRecord.classList.add('game-recordP');
+            
+                // Determine the classes based on the winner
+                const player1Class = game.player1 === game.winner ? 'winner' : 'loser';
+                const player2Class = game.player2 === game.winner ? 'winner' : 'loser';
+            
+                // Create the inner HTML structure for each game record
+                gameRecord.innerHTML = `
+                    <div class="game-header">
+                        <div class="game-date">${game.date_played}</div>
+                    </div>
+                    <div class="game-details">
+                        <div class="player player-left ${player1Class}">${game.player1} (${game.score_player1})</div>
+                        <div class="game-score">vs</div>
+                        <div class="player player-right ${player2Class}">${game.player2} (${game.score_player2})</div>
+                    </div>
+                `;
+            
+                // Append each game record to the history box
+                historyBox.appendChild(gameRecord);
+            });
+
+            // Append history-box to profileBox
+            profileBox.appendChild(historyBox);
+
+            profileBox.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching profile:', error);
+        });
 }
 
 // Function to start a game with the user
 function playGame(friend, globApp) {
+    let dropMen = document.getElementById('dropdownMenu');
+    dropMen.style.display = 'none';
     console.log("GAME REQ SENT");
     console.log(globApp);
     globApp.sendGameRequest(friend, 'Do you want to play a game?');

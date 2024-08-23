@@ -460,7 +460,7 @@ class GameHistoryView(View):
     def get(self, request, *args, **kwargs):
         games = GameHistory.objects.filter(
             models.Q(player1=request.user) | models.Q(player2=request.user)
-        ).order_by('-date_played')[:10]
+        ).order_by('-date_played')[:20]
 
         history = [{
             'player1': game.player1.username,
@@ -523,3 +523,35 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         return JsonResponse({"success": True}, status=200)
+
+@method_decorator(login_required, name='dispatch')
+class FriendProfileView(View):
+    def get(self, request, username):
+        try:
+            # Fetch user by username
+            user = User.objects.get(username=username)
+            profile = UserProfile.objects.get(user=user)
+            
+            # Get the user's game history, ordered by the latest date played
+            game_history = GameHistory.objects.filter(
+                models.Q(player1=user) | models.Q(player2=user)
+            ).order_by('-date_played')[:20]
+            
+            # Prepare the response data
+            data = {
+                'nickname': user.username,
+                'status': profile.status,
+                'avatar': profile.profile_picture.url if profile.profile_picture else '/static/img/avatar.jpg',
+                'history': [{
+                    'player1': game.player1.username,
+                    'player2': game.player2.username,
+                    'winner': game.winner.username if game.winner else 'N/A',  # Handle null winners
+                    'score_player1': game.score_player1,
+                    'score_player2': game.score_player2,
+                    'date_played': game.date_played.strftime('%Y-%m-%d'),
+                } for game in game_history],
+            }
+            return JsonResponse(data, status=200)
+        
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
