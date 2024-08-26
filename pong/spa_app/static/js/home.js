@@ -408,10 +408,40 @@ function initializeHome() {
         event.preventDefault();
         handleLogout(globApp);
     });
+
+    const tournament = new Tournament();
+    document.getElementById('tournamentBtn').addEventListener('click', (event) => {
+        event.preventDefault();
+        tournament.openModal('numberOfPlayersModal');
+    });
+
+
+    const closeM =  document.getElementById('closePlayersModalBtn');
+    const closeM2 = document.getElementById('closePlayerFormModalBtn');
+    const submitPlayersBtn = document.getElementById('submitPlayersBtn');
+    if(!closeM || !closeM2 || !submitPlayersBtn)
+        return;
+    // Bind the close button for the number of players modal
+    document.getElementById('closePlayersModalBtn').addEventListener('click', () => {
+        tournament.closeModal('numberOfPlayersModal');
+    });
+
+    // Bind the submit button for the number of players modal
+    document.getElementById('submitPlayersBtn').addEventListener('click', () => {
+        tournament.generatePlayerInputs();
+    });
+
+    // Bind the close button for the player form modal
+    document.getElementById('closePlayerFormModalBtn').addEventListener('click', () => {
+        tournament.closeModal('playerFormModal');
+    });
     
     Status();
     loadFriends();
 }
+
+
+
 function addBorder(element) {
     // Remove border from all links
     var links = document.querySelectorAll('.side-links a');

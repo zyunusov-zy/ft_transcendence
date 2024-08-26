@@ -81,6 +81,9 @@
         <div class="history-box" id="historyBox">
         </div>
         <div class="play-box" id="playBox">
+            <a href="#" id="tournamentBtn" class="text-decoration-none">
+                <span>Tournament</span>
+            </a>
             <a href="#" id="PlayWithFriendButton" class="text-decoration-none">
                 <span>Remote</span>
             </a>
@@ -128,4 +131,37 @@
             <button type="submit">Submit</button>
         </form>
     </div>
+
+
+    <div id="numberOfPlayersModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <label for="numPlayers">Enter number of players:</label>
+                <button id="closePlayersModalBtn" class="close-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <input type="number" class="form-control" id="numPlayers" min="2" max="10" placeholder="Number of Players">
+            <button id="submitPlayersBtn" class="btn btn-success mt-2">Submit</button>
+        </div>
+    </div>
+    
+    <div id="playerFormModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Enter Player Aliases</h3>
+                <button id="closePlayerFormModalBtn" class="close-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="playerFormDiv"></div>
+        </div>
+    </div>
+    
 </div>

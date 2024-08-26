@@ -793,7 +793,7 @@ body, html {
     background-color: #2e2f42;
 }
 
-#PlayWithFriendButton, #PlayWithFriendSameButton {
+#PlayWithFriendButton, #PlayWithFriendSameButton, #tournamentBtn {
     display: inline-block;
     padding: 10px 20px;
     color: white;
@@ -802,7 +802,7 @@ body, html {
     transition: background-color 0.3s;
 }
 
-#PlayWithFriendButton:hover,#PlayWithFriendSameButton:hover  {
+#PlayWithFriendButton:hover,#PlayWithFriendSameButton:hover, #tournamentBtn:hover {
     background-color: #2e2f42;
 }
 
@@ -998,7 +998,7 @@ body, html {
     margin-bottom: 20px;
 }
 
-.home-button {
+.home-button, next-match-button {
     padding: 10px 20px;
     background-color: #C33149;
     border: none;
@@ -1008,7 +1008,7 @@ body, html {
     transition: background-color 0.3s ease;
 }
 
-.home-button:hover {
+.home-button:hover, next-match-button:hover {
     background-color: #ff7f7f;
 }
 
@@ -1216,4 +1216,54 @@ body, html {
     background-color: #131426;
     color: white;
     width: 70%;
+}
+
+/* Tournament */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    font-size: 24px;
+}
+
+.close-btn svg {
+    stroke: #333; /* Close button color */
+    width: 24px;
+    height: 24px;
+}
+
+.close-btn:hover svg {
+    stroke: #ff0000; /* Close button hover color */
 }

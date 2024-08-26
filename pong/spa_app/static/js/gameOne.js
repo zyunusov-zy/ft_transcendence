@@ -1,7 +1,7 @@
 class PlayerS {
     constructor(username) {
         this.username = username;
-        this.score = 0;
+        this.score = 4;
         this.winner = 0;
     }
 
@@ -11,7 +11,8 @@ class PlayerS {
 }
 
 class GameAPPS {
-	constructor(name1, name2) {
+	constructor(name1, name2, tournament) {
+        console.log("Printitng names of the players: ", name1, name2);
         this.keyState = {
             w: false,
 			s: false,
@@ -68,6 +69,10 @@ class GameAPPS {
         this.animationFrameId = null;
         this.gameRunning = true; 
         this.attachedToRacket = null;
+
+        this.winnerS = null;
+        this.tournament = tournament;
+        this.gameOverCallback = null;
     }
 
 	initGame() {
@@ -407,6 +412,8 @@ class GameAPPS {
         this.gameRunning = false;
         this.stopAnimation(); // Stop the animation loop
         
+        this.winnerS = winner;
+        console.log("I am in the handleGameOver: ", this.winnerS);
         // Display the winner
         const gameData = {
             player1_username: this.players.player1.username,
@@ -415,10 +422,29 @@ class GameAPPS {
             score_player2: this.players.player2.score,
             winner_username: winner,
         };
-        console.log(gameData);
-        this.saveGameHistory(gameData);
+        // console.log(gameData);
+        if ( this.tournament === 0)
+            this.saveGameHistory(gameData);
         this.cleanUp(); // Clean up variables
-        this.displayWinner(winner);
+        if ( this.tournament === 0)
+            this.displayWinner(winner);
+        else
+            this.deleteThingsFromGame();
+        if (this.gameOverCallback) {
+            console.log("Handling game over, winner:", winner);
+            this.gameOverCallback(winner);
+            this.gameOverCallback = null; // Clear it after being called
+        } else {
+            console.error("gameOverCallback was already called or not set.");
+        }
+    }
+
+    deleteThingsFromGame()
+    {
+        const gameCon = document.getElementById('gameCon');
+        while (gameCon.firstChild) {
+            gameCon.removeChild(gameCon.firstChild);
+        } 
     }
 
     async saveGameHistory(gameData)
@@ -518,15 +544,16 @@ class GameAPPS {
         const player2Score = document.getElementById('player2-score');
         
 		console.log(this.players);
-		console.log(this.players.player2.username);
+		// console.log(this.players.player2.username);
         player1Name.textContent = this.players.player1.username;
         player2Name.textContent = this.players.player2.username;
         player1Score.textContent = this.players.player1.score;
         player2Score.textContent = this.players.player2.score;
     }
 
-	init()
+	async init()
 	{
+        console.log("RUNNING INIT");
 		document.getElementById('gameCon').style.display = 'block';
         document.getElementById('sideBar').style.display = 'none';
         document.getElementById('mainPageHome').style.display = 'none';
@@ -546,6 +573,18 @@ class GameAPPS {
         `;
         document.getElementById('gameCon').appendChild(scoreboard);
         
-        this.initGame();
+        if (this.tournament === 1) {
+            console.log("Setting up the promise for tournament game");
+    
+            // Set the promise and initGame simultaneously
+            return new Promise((resolve) => {
+                console.log("RESOLVE IN INIT: ", resolve);
+                this.gameOverCallback = resolve; // Assign the callback to the promise resolver
+                this.initGame();  // Start the game immediately after setting up the callback
+            });
+        } else {
+            this.initGame();  // For non-tournament games, just start the game
+            return;  // Non-tournament games don't need a promise
+        }
 	}
 }
