@@ -5,19 +5,17 @@ class Tournament {
         this.activeTournament = false;
         this.currentMatchIndex = 0;
         this.winners = [];
-        this.lastMatchWiner = null;
-        this.lastRound = false;
         console.log("Tournament initialized");
     }
 
     openModal(modalId) {
-        console.log(`Opening modal with ID: ${modalId}`);
         document.getElementById(modalId).style.display = 'flex';
+        console.log(`Modal ${modalId} opened`);
     }
 
     closeModal(modalId) {
-        console.log(`Closing modal with ID: ${modalId}`);
         document.getElementById(modalId).style.display = 'none';
+        console.log(`Modal ${modalId} closed`);
     }
 
     generatePlayerInputs() {
@@ -32,8 +30,8 @@ class Tournament {
             return;
         }
 
-        if (numPlayers > 4) {
-            alert("Only up to 4 players can participate in the tournament.");
+        if (numPlayers > 8) {
+            alert("Only up to 8 players can participate in the tournament.");
             console.log("Error: More than 8 players");
             return;
         }
@@ -54,6 +52,7 @@ class Tournament {
         this.closeModal('numberOfPlayersModal');
         this.openModal('playerFormModal');
 
+        // Add event listener to the Start Tournament button
         const startTournamentBtn = document.getElementById('startTournamentBtn');
         if (startTournamentBtn) {
             startTournamentBtn.addEventListener('click', () => {
@@ -64,13 +63,11 @@ class Tournament {
     }
 
     collectPlayerNames() {
-        console.log("Collecting player names from the form");
         const playerForm = document.getElementById('playerForm');
         const formData = new FormData(playerForm);
         this.players = [];
 
-        formData.forEach((value, key) => {
-            console.log(`Collected player ${key}: ${value}`);
+        formData.forEach((value) => {
             this.players.push(value); // Collect player names
         });
 
@@ -99,16 +96,8 @@ class Tournament {
     organizeIntoPairs() {
         console.log("Organizing players into pairs");
         const pairs = [];
-
-        if (this.players.length === 1) {
-            const singlePlayer = this.players[0];
-            alert(`${singlePlayer} is the tournament champion!`);
-            document.getElementById('gameCon').style.display = 'none';
-            document.getElementById('sideBar').style.display = 'flex';
-            document.getElementById('mainPageHome').style.display = 'flex';
-            console.log(`Tournament champion: ${singlePlayer}`);
-        }
     
+        // Handle bye if odd number of players
         if (this.players.length % 2 !== 0) {
             const byePlayerIndex = Math.floor(Math.random() * this.players.length);
             const byePlayer = this.players.splice(byePlayerIndex, 1)[0]; // Remove the bye player from the list
@@ -116,12 +105,10 @@ class Tournament {
             console.log(`Bye assigned to player: ${byePlayer}`);
         }
     
+        // Pair remaining players
         for (let i = 0; i < this.players.length; i += 2) {
             if (this.players[i + 1] !== undefined) {
                 pairs.push([this.players[i], this.players[i + 1]]);
-                console.log(`Pair formed: ${this.players[i]} vs ${this.players[i + 1]}`);
-            } else {
-                console.log(`Unpaired player: ${this.players[i]}`);
             }
         }
     
@@ -130,8 +117,8 @@ class Tournament {
     }
 
     async runMatch(player1, player2) {
-        console.log(`Running match between ${player1} and ${player2}`);
         try {
+            console.log(`Running match between ${player1} and ${player2}`);
             if (player2 === null) {
                 alert(`${player1} automatically advances to the next round due to a bye.`);
                 console.log(`${player1} advances due to bye`);
@@ -142,55 +129,61 @@ class Tournament {
             const gameAppS = new GameAPPS(player1, player2, 1); // Initialize the game
             const winner = await gameAppS.init();
     
-            console.log("Match completed. Winner:", winner);
+            console.log("I AM HERE");
             this.displayMatchResult(winner);
-            return(winner);
+            return winner;
         } catch (error) {
-            console.error("An error occurred while running the match:", error);
+            console.error("An error occurred:", error);
         }
     }
 
     displayMatchResult(winner) {
         console.log("Displaying the result for winner: ", winner);
+        this.updateBracket();
 
         const gameCon = document.getElementById('gameCon');
-        const bracketHTML = this.getBracketHTML(winner);
-
-        const resultText = this.lastRound ? `${winner} is the champion!` : `${winner} is the winner!`;
-        const buttonText = this.lastRound ? 'Home' : 'Start Next Match';
-
+        const bracketHTML = this.getBracketHTML();
         gameCon.innerHTML = `
             <div class="winner-container">
-                <h1 class="winner-text">${resultText}</h1>
+                <h1 class="winner-text">${winner} is the winner!</h1>
                 <div id="bracketCon">${bracketHTML}</div>
-                <button id="nextMatchButton" class="next-match-button">${buttonText}</button>
+                <button id="nextMatchButton" class="next-match-button">Start Next Match</button>
             </div>
         `;
 
         document.getElementById('nextMatchButton').addEventListener('click', () => {
-            console.log("Next Match button clicked");
+            const gameCon = document.getElementById('gameCon');
             document.getElementById('gameCon').style.display = 'none';
             gameCon.innerHTML = '';
-            // this.startNextMatch();
-            this.currentMatchIndex += 2;
-        }, { once: true });
+            this.startNextMatch();
+        });
     }
 
-    getBracketHTML(winner) {
-        let bracketHTML = '';
+    updateBracket() {
+        const bracketCon = document.getElementById('bracketCon');
+        let bracketHTML = `<div class="bracket">`;
+    
         // Create the bracket layout
         this.currentRoundPairs.forEach(pair => {
             bracketHTML += `<div class="bracket-pair">`;
             pair.forEach(player => {
-                let playerClass = '';
-                if (player === winner) {
-                    playerClass += 'winner ';
-                }
-                if (player === this.lastMatchWiner) {
-                    playerClass += 'winner ';
-                }
-                this.lastMatchWiner = winner;
-                bracketHTML += `<div class="bracket-player ${playerClass}">${player || 'Bye'}</div>`;
+                bracketHTML += `<div class="bracket-player">${player || 'Bye'}</div>`;
+            });
+            bracketHTML += `</div>`;
+        });
+    
+        bracketHTML += `</div>`;
+        bracketCon.innerHTML = bracketHTML;
+    }
+
+    getBracketHTML() {
+        let bracketHTML = '';
+        
+        // Create the bracket layout
+        this.currentRoundPairs.forEach(pair => {
+            bracketHTML += `<div class="bracket-pair">`;
+            pair.forEach(player => {
+                bracketHTML += `<div class="bracket-player">${player || 'Bye'}</div>`;
             });
             bracketHTML += `</div>`;
         });
@@ -199,13 +192,10 @@ class Tournament {
     }
 
     async startNextMatch() {
-        console.log("Starting next match. Current match index:", this.currentMatchIndex);
-        console.log("Starting next match. Current Pair length:", this.currentRoundPairs.length);
         if (this.currentMatchIndex < this.currentRoundPairs.length) {
             const [player1, player2] = this.currentRoundPairs[this.currentMatchIndex];
-            console.log(`Current match index: ${this.currentMatchIndex}`);
-            console.log(`Player 1: ${player1}`);
-            console.log(`Player 2: ${player2}`);
+            this.currentMatchIndex += 1; // Increment the match index
+    
             try {
                 const winner = await this.runMatch(player1, player2);
                 this.winners.push(winner); // Store the winner for the next round
@@ -214,11 +204,11 @@ class Tournament {
                 console.error("Error running the match:", error);
             }
         } else {
-            console.log("All matches in the current round are complete.");
+            // All matches in the current round are complete
             this.players = this.winners; // Move the winners to the next round
             this.winners = []; // Reset the winners array for the next round
             this.currentMatchIndex = 0; // Reset match index for the next round
-            
+    
             if (this.players.length > 1) {
                 this.currentRoundPairs = this.organizeIntoPairs(); // Set up pairs for the next round
                 await this.runRound(this.currentRoundPairs); // Start the next round
@@ -238,84 +228,41 @@ class Tournament {
         }
     }
     
+
     async runRound(pairs) {
         console.log("Starting round with pairs:", pairs);
         const winners = [];
         for (const [player1, player2] of pairs) {
-            console.log(`Running match for pair: ${player1} vs ${player2}`);
             const winner = await this.runMatch(player1, player2); // Get the winner for each pair
             winners.push(winner);
-            console.log(`Match result: ${winner} is the winner`);
-            await this.waitForNextMatch();
         }
         console.log("Winners of the round:", winners);
         this.players = winners; // Update players for the next round
         this.currentRoundPairs = this.organizeIntoPairs(); // Set up pairs for the next round
     }
 
-    async waitForNextMatch() {
-        return new Promise((resolve) => {
-            console.log("Waiting for user to start the next match");
-    
-            // Check if the button exists before trying to interact with it
-            const nextMatchButton = document.getElementById('nextMatchButton');
-            if (nextMatchButton) {
-                // Function to handle the button click
-                const handleNextMatch = () => {
-                    nextMatchButton.removeEventListener('click', handleNextMatch);
-                    resolve();
-                };
-    
-                // Add event listener to the button
-                nextMatchButton.addEventListener('click', handleNextMatch);
-            } else {
-                console.error("Next Match button not found.");
-                // Resolve immediately if the button is not found
-                resolve();
-            }
-        });
-    }
-
     async startTournament() {
-        console.log("Starting the tournament");
+        console.log("Tournament started");
         this.activeTournament = true;
     
         this.shufflePlayers(); // Shuffle players before starting
     
-        const totalRounds = this.calculateTotalRounds(this.players.length);
-        console.log(`Total rounds: ${totalRounds}`);
-        for (let round = 1; round <= totalRounds; round++) {
-            console.log(`Starting round ${round}`);
-            if(round === totalRounds)
-                this.lastRound = true;
-            if (this.players.length > 1) {
-                this.currentRoundPairs = this.organizeIntoPairs(); // Set pairs for the current round
-                await this.runRound(this.currentRoundPairs); // Run the current round
+        if (this.players.length > 1) {
+            this.currentRoundPairs = this.organizeIntoPairs(); // Set initial pairs
+            await this.runRound(this.currentRoundPairs); // Start the first round
+        } else {
+            const champion = this.players[0]; // Last remaining player
+            if (champion) {
+                alert(`${champion} is the tournament champion!`);
+                document.getElementById('gameCon').style.display = 'none';
+                document.getElementById('sideBar').style.display = 'flex';
+                document.getElementById('mainPageHome').style.display = 'flex';
+                console.log(`Tournament champion: ${champion}`);
             } else {
-                const champion = this.players[0]; // Last remaining player
-                if (champion) {
-                    alert(`${champion} is the tournament champion!`);
-                    document.getElementById('gameCon').style.display = 'none';
-                    document.getElementById('sideBar').style.display = 'flex';
-                    document.getElementById('mainPageHome').style.display = 'flex';
-                    console.log(`Tournament champion: ${champion}`);
-                } else {
-                    console.error("Error: No champion found.");
-                }
-                break; // Exit the loop if tournament is complete
+                console.error("Error: No champion found.");
             }
+            this.resetTournament();
         }
-    
-        this.resetTournament(); // Reset the tournament
-    }
-
-    calculateTotalRounds(numPlayers) {
-        let rounds = 0;
-        while (numPlayers > 1) {
-            numPlayers = Math.ceil(numPlayers / 2);
-            rounds += 1;
-        }
-        return rounds;
     }
 
     resetTournament() {

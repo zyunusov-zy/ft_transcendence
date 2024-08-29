@@ -998,7 +998,7 @@ body, html {
     margin-bottom: 20px;
 }
 
-.home-button, next-match-button {
+.home-button, .next-match-button {
     padding: 10px 20px;
     background-color: #C33149;
     border: none;
@@ -1008,7 +1008,7 @@ body, html {
     transition: background-color 0.3s ease;
 }
 
-.home-button:hover, next-match-button:hover {
+.home-button:hover, .next-match-button:hover {
     background-color: #ff7f7f;
 }
 
@@ -1266,4 +1266,48 @@ body, html {
 
 .close-btn:hover svg {
     stroke: #ff0000; /* Close button hover color */
+}
+
+/* Bracket */
+
+#bracketCon {
+    display: flex;
+    flex-direction: row;
+    gap: 30px; /* Gap between rounds */
+    justify-content: center;
+    margin: 20px auto;
+}
+
+/* Container for each round */
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Gap between pairs in a round */
+}
+
+/* Style for each pair in the bracket */
+.bracket-pair {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Style for each player box */
+.bracket-player {
+    width: 100px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 0 5px;
+    font-size: 1rem;
+    color: white;
+}
+
+/* Style for the winner */
+.winner {
+    background-color: #4CAF50; /* Green color for the winner */
+    color: white;
 }
