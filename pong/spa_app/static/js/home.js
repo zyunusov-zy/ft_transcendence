@@ -374,7 +374,7 @@ function initializeHome() {
         const own = document.getElementById('own_username').value;
 
         // Initialize the game with the provided opponent username
-        const gameAppS = new GameAPPS(own, opponentUsername);
+        const gameAppS = new GameAPPS(own, opponentUsername, 0);
         gameAppS.init();
         
         // Optionally, hide the form after submission

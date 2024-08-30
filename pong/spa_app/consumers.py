@@ -431,7 +431,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'type': 'send_ball_state',
                     'position': message['position'],
                     'velocity': message['velocity'],
-                    'attachedToRacket': message.get('attachedToRacket', None)
                 }
             )
         # print(f"Sent message to {self.user}: {message}")
@@ -442,7 +441,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             'type': 'ball_state',
             'position': event['position'],
             'velocity': event['velocity'],
-            'attachedToRacket': event.get('attachedToRacket', None)
         }))
 
     async def score_update(self, event):

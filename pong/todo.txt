@@ -1,48 +1,10 @@
 Docker 
 change later from ws to wss and enable an HTTPS connection
 
-Game
-problem need to spam space to throw the ball
 
+0)Moving ball in random dir when user scores and start on the center
 
-2)Need to create a Tournament
-
-Tournament Setup:
-
-DONE  Ask the user how many players will participate in the tournament.
-DONE  Once the number of players is submitted, dynamically generate input fields where each player can enter their alias or display name.
-
-
-Player Registration:
-
-Collect the aliases of all the players and store them in a list.
-Once registration is complete, reset any previous tournament data.
-
-Matchmaking System:
-
-Based on the list of registered players, create a match order.
-you could implement an elimination bracket system.
-The matchmaking system will determine the next set of players and display who is currently playing and who will play next.
-
-Notification System:
-
-Announce the next match and notify the players who will be participating in the upcoming game.
-
-Game Flow:
-
-Manage the flow of the tournament by tracking which match is currently being played and updating the list of completed matches.
-The system should automatically advance to the next match after the current one finishes.
-
-
-
-
-
-
-
-
-
-
-
+1)Need to do error hadnling for a Server
 
 Modules: 6
 
