@@ -2,7 +2,7 @@ Docker
 change later from ws to wss and enable an HTTPS connection
 
 
-0)Moving ball in random dir when user scores and start on the center
+0)Check history save in consumer smth wrong 
 
 1)Need to do error hadnling for a Server
 

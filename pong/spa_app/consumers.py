@@ -345,7 +345,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
                 winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
                 winner = await database_sync_to_async(User.objects.get)(username=winner_username)
-
+                print("HEREEEEEEEEEWWWW")
                 game_record = await database_sync_to_async(GameHistory.objects.create)(
                     player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
                     player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
@@ -354,6 +354,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     winner=winner
                 )
                 print(f"[DEBUG] Game record created with ID: {game_record.id}")
+                print("Game Record:", game_record)
 
         if disconnect_count >= 2:
             print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
