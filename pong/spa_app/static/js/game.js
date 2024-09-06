@@ -55,13 +55,12 @@ class GameApp {
 
         this.tablePosZ = -150;
         this.ballRadius = 15;
-        this.halfRacketHeight = this.racketH / 2; // Corrected reference to this.racketH
+        this.halfRacketHeight = this.racketH / 2;
 
-        // Initialize tableProp after defining other properties
         this.tableProp = {
             minZ: this.tablePosZ - this.tableD / 2 + this.ballRadius,
             maxZ: this.tablePosZ + this.tableD / 2 - this.ballRadius,
-            minX: -this.tableW / 2, // Fixed syntax issue
+            minX: -this.tableW / 2,
             maxX: this.tableW / 2
         };
 
@@ -328,12 +327,12 @@ class GameApp {
             // console.log(keyState);
             if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
                 // console.log("CALLED1");
-                this.rRacket.position.z -= 5; // Fixed movement direction
+                this.rRacket.position.z -= 5;
                 // console.log('Moving right racket up:', rRacket.position.z);
             }
             if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
                 // console.log("CALLED2");
-                this.rRacket.position.z += 5; // Fixed movement direction
+                this.rRacket.position.z += 5;
                 // console.log('Moving right racket down:', rRacket.position.z);
             }
             // console.log("CALLED");
@@ -346,7 +345,6 @@ class GameApp {
                 // console.log('Moving left racket down:', racket.position.z);
             }
             
-            // Move opponent's right racket based on opponentKeyState
         } else if (this.assignedSide === 'right') {
             // console.log(keyState);
             if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
@@ -358,15 +356,14 @@ class GameApp {
                 // console.log('Moving right racket down:', rRacket.position.z);
             }
             // console.log("C");
-            // Move opponent's left racket based on opponentKeyState
             if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
                 // console.log("C1");
-                this.racket.position.z -= 5; // Fixed movement direction
+                this.racket.position.z -= 5;
                 // console.log('Moving left racket up:', racket.position.z);
             }
             if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
                 // console.log("C2");
-                this.racket.position.z += 5; // Fixed movement direction
+                this.racket.position.z += 5;
                 // console.log('Moving left racket down:', racket.position.z);
             }
         }
@@ -374,19 +371,16 @@ class GameApp {
 
     moveBall()
     {
-        // Update ball position based on its velocity
         this.ball.position.x += this.ballVelocity.x;
         this.ball.position.y += this.ballVelocity.y;
         this.ball.position.z += this.ballVelocity.z;
     
-        // Ball position to stay within table boundaries
         this.ball.position.x = Math.max(this.tableProp.minX, Math.min(this.tableProp.maxX, this.ball.position.x));
         this.ball.position.z = Math.max(this.tableProp.minZ, Math.min(this.tableProp.maxZ, this.ball.position.z));
         this.checkCollision();
     }
 
     checkCollision() {
-        // Check collision with table depth boundaries
         if (this.ball.position.z - this.ballRadius <= this.tableProp.minZ && this.ballVelocity.z < 0) {
             // Ball hits the lower wall
             this.ballVelocity.z *= -1;
@@ -534,8 +528,8 @@ class GameApp {
 
     handleGameOver(winner) {
         this.gameRunning = false;
-        this.stopAnimation(); // Stop the animation loop
-        this.cleanUp(); // Clean up variables
+        this.stopAnimation();
+        this.cleanUp();
 
         // Display the winner
         this.displayWinner(winner);

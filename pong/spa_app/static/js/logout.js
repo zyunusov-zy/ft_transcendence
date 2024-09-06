@@ -34,10 +34,9 @@ const clearAuthData = () => {
 const closeAllChatSockets = () => {
     for (const socketId in chatSockets) {
         if (chatSockets[socketId] && chatSockets[socketId].readyState === WebSocket.OPEN) {
-            chatSockets[socketId].close(); // Close the WebSocket connection
+            chatSockets[socketId].close();
         }
     }
 
-    // Optionally, clear the chatSockets object
     chatSockets = {};
 };

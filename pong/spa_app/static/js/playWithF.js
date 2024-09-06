@@ -36,7 +36,6 @@ function displayFriendsList(friendsList, gameApp) {
 		const friendItem = document.createElement('li');
 		friendItem.textContent = friend.username;
 		friendItem.addEventListener('click', () => {
-			// Handle click event to send game request later
 			gameApp.sendGameRequest(friend.username, 'Do you want to play a game?');
 		});
 		friendsListElement.appendChild(friendItem);

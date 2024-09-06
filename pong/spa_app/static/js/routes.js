@@ -96,7 +96,6 @@ const LocationHandler = async () => {
 
 		console.log(queryParams);
 		console.log(queryParams.verification);
-        // Display verification message if query parameters are present
         if (queryParams.verification) {
             displayVerificationMessage(queryParams);
         }
@@ -153,7 +152,7 @@ const handleNewPassRes = (token) => {
         const confirmPassword = formData.get('confirm_password');
         
         const errorMessage = document.getElementById('error-message');
-        errorMessage.innerText = ''; // Clear previous errors
+        errorMessage.innerText = '';
 
         if (newPassword !== confirmPassword) {
             errorMessage.innerText = 'Passwords do not match.';
@@ -191,7 +190,6 @@ const handleNewPassRes = (token) => {
             const data = await response.json();
             if (data.success) {
                 console.log('Password reset successful');
-                // Redirect to login or another appropriate page
                 window.location.href = '#login';
             } else {
                 console.error('Password reset failed', data.error);
@@ -233,7 +231,7 @@ const displayVerificationMessage = (queryParams) => {
             messageDiv.classList.replace('alert-success', 'alert-danger');
         }
 
-        const loginForm = document.querySelector('#loginForm'); // Adjust the selector to match your login form
+        const loginForm = document.querySelector('#loginForm');
         if (loginForm) {
             loginForm.insertAdjacentElement('beforebegin', messageDiv);
         }
@@ -269,10 +267,10 @@ const handlePasswordReset = async (event) => {
     }
 };
 
-  // Listen to hash changes
+
 window.addEventListener("hashchange", LocationHandler);
   
-  // Initial load
+
 window.addEventListener("DOMContentLoaded", () => {
 	LocationHandler();
 });

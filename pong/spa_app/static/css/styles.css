@@ -450,7 +450,7 @@ body, html {
     border-radius: 1em;
     padding: 1em;
     overflow-y: auto;
-    scrollbar-width: none; /* Set a thin scrollbar */
+    scrollbar-width: none;
     height: 100%;
 }
 
@@ -540,15 +540,15 @@ body, html {
 
 .status-icon {
     display: inline-block;
-    width: 20px; /* Set the width of the SVG */
-    height: 20px; /* Set the height of the SVG */
-    margin-right: 10px; /* Space between the icon and the nickname */
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
 }
 
 .status-icon svg {
     width: 100%;
     height: 100%;
-    display: block; /* Ensure the SVG takes up the full container size */
+    display: block;
 }
 
 .friend-mini-box:hover
@@ -619,21 +619,21 @@ body, html {
     position: fixed;
     bottom: 50%;
     right: 50%;
-    transform: translate(50%, 50%); /* Center the chat box */
-    width: 600px; /* Width of the chat box */
-    height: 400px; /* Height of the chat box */
+    transform: translate(50%, 50%);
+    width: 600px;
+    height: 400px;
     background-color: white;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.7); /* Strong shadow */
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.7);
     border-radius: 8px;
-    padding: 30px 20px 20px 20px; /* Consistent padding all around */
+    padding: 30px 20px 20px 20px;
     z-index: 1000;
     display: none;
     gap: 10px;
-    flex-direction: column; /* Use flexbox to manage layout */
-    box-sizing: border-box; /* Ensure padding is included in width/height */
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
-/* Active class to display the chat box */
+
 .chat-box.active {
     display: flex;
 }
@@ -642,7 +642,7 @@ body, html {
 .chat-box .close-button {
     background: none;
     border: none;
-    font-size: 24px; /* Larger close button */
+    font-size: 24px;
     cursor: pointer;
     color: #888;
     position: absolute;
@@ -653,21 +653,21 @@ body, html {
 /* Messages container styling */
 .chat-box .messages {
     flex-grow: 1;
-    overflow-y: scroll; /* Allow scrolling if messages overflow */
+    overflow-y: scroll;
     padding: 10px;
     background-color: #f5f5f5;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    scrollbar-width: none; /* Hide scrollbar in Firefox */
-    -ms-overflow-style: none; /* Hide scrollbar in IE and Edge */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
 }
 
 /* My message styling */
 .my-message {
-    align-self: flex-start; /* Align to the left */
-    background-color: #d1e7dd; /* Light green for your messages */
+    align-self: flex-start;
+    background-color: #d1e7dd; 
     color: #333;
     padding: 8px 12px;
     border-radius: 8px;
@@ -677,8 +677,8 @@ body, html {
 
 /* Friend's message styling */
 .friend-message {
-    align-self: flex-end; /* Align to the right */
-    background-color: #f8d7da; /* Light red for friend's messages */
+    align-self: flex-end;
+    background-color: #f8d7da;
     color: #333;
     padding: 8px 12px;
     border-radius: 8px;
@@ -691,13 +691,13 @@ body, html {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: auto; /* Push to bottom of chat box */
+    margin-top: auto;
 }
 
 /* Message input field styling */
 .chat-box .message-input {
-    flex-grow: 1; /* Take up remaining space */
-    padding: 10px; /* Increase padding for better usability */
+    flex-grow: 1;
+    padding: 10px;
     border-radius: 4px;
     border: 1px solid #ddd;
     box-sizing: border-box;
@@ -705,7 +705,7 @@ body, html {
 
 /* Send button styling */
 .chat-box .send-button {
-    padding: 10px 20px; /* Increase padding for a larger button */
+    padding: 10px 20px;
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -718,19 +718,19 @@ body, html {
     position: relative;
     background: none;
     border: none;
-    font-size: 30px; /* Adjust the size for visibility */
-    padding: 5px 10px; /* Similar padding to the block button */
-    color: black; /* Set text color */
+    font-size: 30px;
+    padding: 5px 10px;
+    color: black;
     cursor: pointer;
     border-radius: 4px;
     box-sizing: border-box;
-    display: inline-flex; /* Make the button inline-flex for better alignment */
-    align-items: center; /* Vertically center the content */
-    justify-content: center; /* Horizontally center the content */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ellipsis-button:hover {
-    background-color: #ddd; /* Optional hover effect */
+    background-color: #ddd;
 }
 
 .dropdown-menu {
@@ -739,7 +739,7 @@ body, html {
     border: 1px solid #ccc;
     border-radius: 4px;
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
-    z-index: 1000; /* Ensure it appears above other elements */
+    z-index: 1000;
     padding: 5px 0;
 }
 
@@ -761,8 +761,8 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
-    z-index: 999; /* Below the chat box but above the rest of the content */
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
     display: none;
 }
 
@@ -775,7 +775,7 @@ body, html {
 
 #friendsList {
     color: white;
-    list-style-type: none; /* Remove bullet points */
+    list-style-type: none;
     padding: 0;
     margin: 0;
 }
@@ -927,11 +927,11 @@ body, html {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Background shadow */
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000; /* Ensures the overlay is on top */
+    z-index: 1000;
 }
 
 #gameRequestContainer {
@@ -950,11 +950,11 @@ body, html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 80%; /* Make the scoreboard a bit smaller */
-    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
-    color: white; /* Text color */
-    padding: 5px 0; /* Less padding to make it smaller */
-    z-index: 1000; /* Ensure it is on top of other elements */
+    width: 80%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 0;
+    z-index: 1000;
 }
 
 #player1, #player2 {
@@ -963,21 +963,21 @@ body, html {
 }
 
 #score-center {
-    flex: 2; /* Take more space for the center score */
+    flex: 2; 
     text-align: center;
-    font-size: 2em; /* Make score bigger */
+    font-size: 2em;
 }
 
 #player1-name, #player2-name {
-    font-size: 1.5em; /* Make nickname size */
+    font-size: 1.5em; 
 }
 
 #gameCon {
     display: none;
-    position: relative; /* Ensure gameCon is positioned relative for absolute positioning of scoreboard */
+    position: relative;
     width: 100%;
-    height: 100vh; /* Full height for demonstration */
-    overflow: hidden; /* Prevent overflow */
+    height: 100vh;
+    overflow: hidden; 
 }
 
 /* Winner */
@@ -1069,27 +1069,27 @@ body, html {
 
 /* Opponent Nickname */
 #opponentFormContainer {
-    position: fixed;  /* Fixes the container to the viewport */
+    position: fixed; 
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    display: none;  /* Use flexbox to center the content */
-    align-items: center;  /* Center vertically */
-    justify-content: center;  /* Center horizontally */
-    background-color: rgba(0, 0, 0, 0.5);  /* Semi-transparent background */
-    z-index: 1000;  /* Ensure it is on top of other content */
+    display: none;  
+    align-items: center; 
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); 
+    z-index: 1000; 
 }
 
 /* Style the form itself */
 #opponentForm {
-    background-color: white;  /* White background for the form */
+    background-color: white;  
     padding: 20px;
-    border-radius: 8px;  /* Rounded corners */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);  /* Shadow effect */
-    width: 300px;  /* Set a fixed width or adjust as needed */
-    max-width: 90%;  /* Ensure it doesn't overflow the viewport */
-    box-sizing: border-box;  /* Include padding in width calculation */
+    border-radius: 8px; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    width: 300px;
+    max-width: 90%; 
+    box-sizing: border-box;  
 }
 
 /* Style the input fields and button */
@@ -1102,31 +1102,31 @@ body, html {
 }
 
 #opponentForm button {
-    background-color: #007bff;  /* Blue background for the button */
-    color: white;  /* White text color */
+    background-color: #007bff; 
+    color: white;  
     border: none;
     border-radius: 4px;
     cursor: pointer;
 }
 
 #opponentForm button:hover {
-    background-color: #0056b3;  /* Darker blue on hover */
+    background-color: #0056b3;  
 }
 
 /* Profile */
 
 .profile-box {
-    position: fixed; /* Fixed position to keep it above other content */
+    position: fixed; 
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%); /* Center the box on the screen */
-    background-color: #C33149; /* Background color for visibility */
+    transform: translate(-50%, -50%); 
+    background-color: #C33149; 
     padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for the "popup" effect */
-    z-index: 1000; /* High z-index to ensure it's above the chat */
-    width: 700px; /* Adjust width as needed */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    z-index: 1000; 
+    width: 700px; 
     height: 70vh;
-    border-radius: 10px; /* Optional rounded corners */
+    border-radius: 10px; 
 }
 
 
@@ -1137,7 +1137,6 @@ body, html {
     color: #100C4F;
     display: flex;
     height: 30%;
-    /* flex-direction: column; */
 }
 
 .person-infoP {
@@ -1170,7 +1169,7 @@ body, html {
     box-shadow: 0 0 2em rgb(69, 69, 69);
     height: 70%;
     display: flex;
-    justify-content: flex-start; /* Changed to flex-start to align items to the top */
+    justify-content: flex-start;
     align-items: center;
     flex-direction: column;
     border-radius: 0.5em;
@@ -1259,13 +1258,13 @@ body, html {
 }
 
 .close-btn svg {
-    stroke: #333; /* Close button color */
+    stroke: #333;
     width: 24px;
     height: 24px;
 }
 
 .close-btn:hover svg {
-    stroke: #ff0000; /* Close button hover color */
+    stroke: #ff0000;
 }
 
 /* Bracket */
@@ -1273,7 +1272,7 @@ body, html {
 #bracketCon {
     display: flex;
     flex-direction: row;
-    gap: 30px; /* Gap between rounds */
+    gap: 30px;
     justify-content: center;
     margin: 20px auto;
 }
@@ -1308,6 +1307,6 @@ body, html {
 
 /* Style for the winner */
 .winner {
-    background-color: #4CAF50; /* Green color for the winner */
+    background-color: #4CAF50;
     color: white;
 }

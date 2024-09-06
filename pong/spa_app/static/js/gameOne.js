@@ -56,13 +56,12 @@ class GameAPPS {
 
         this.tablePosZ = -150;
         this.ballRadius = 15;
-        this.halfRacketHeight = this.racketH / 2; // Corrected reference to this.racketH
+        this.halfRacketHeight = this.racketH / 2;
 
-        // Initialize tableProp after defining other properties
         this.tableProp = {
             minZ: this.tablePosZ - this.tableD / 2 + this.ballRadius,
             maxZ: this.tablePosZ + this.tableD / 2 - this.ballRadius,
-            minX: -this.tableW / 2, // Fixed syntax issue
+            minX: -this.tableW / 2,
             maxX: this.tableW / 2
         };
 
@@ -213,7 +212,6 @@ class GameAPPS {
 
 	moveBall()
     {
-        // Update ball position based on its velocity
         this.ball.position.x += this.ballVelocity.x;
         this.ball.position.y += this.ballVelocity.y;
         this.ball.position.z += this.ballVelocity.z;
@@ -398,7 +396,7 @@ class GameAPPS {
         if (this.gameOverCallback && this.tournament === 1) {
             console.log("Handling game over, winner:", winner);
             this.gameOverCallback(winner);
-            this.gameOverCallback = null; // Clear it after being called
+            this.gameOverCallback = null;
         } else {
             console.error("gameOverCallback was already called or not set.");
         }
@@ -419,7 +417,7 @@ class GameAPPS {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), // Include the CSRF token if required
+                    'X-CSRFToken': getCookie('csrftoken'),
                 },
                 body: JSON.stringify(gameData),
             });
@@ -523,15 +521,14 @@ class GameAPPS {
         if (this.tournament === 1) {
             console.log("Setting up the promise for tournament game");
     
-            // Set the promise and initGame simultaneously
             return new Promise((resolve) => {
                 console.log("RESOLVE IN INIT: ", resolve);
-                this.gameOverCallback = resolve; // Assign the callback to the promise resolver
-                this.initGame();  // Start the game immediately after setting up the callback
+                this.gameOverCallback = resolve;
+                this.initGame();
             });
         } else {
-            this.initGame();  // For non-tournament games, just start the game
-            return;  // Non-tournament games don't need a promise
+            this.initGame();
+            return;
         }
 	}
 }

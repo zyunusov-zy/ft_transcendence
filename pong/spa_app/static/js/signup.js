@@ -28,14 +28,12 @@ const handleSignupSub = async (event) => {
             messageDiv.classList.add('alert', 'alert-success', 'mt-3');
             messageDiv.textContent = data.message;
 
-            // Append success message to the form
             form.insertAdjacentElement('beforebegin', messageDiv);
         } else {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('alert', 'alert-danger', 'mt-3');
             messageDiv.textContent = data.errors;
 
-            // Append error message to the form
             form.insertAdjacentElement('beforebegin', messageDiv);
         }
 

@@ -170,11 +170,9 @@ class PasswordResetView(View):
                 return JsonResponse({'success': False, 'error': 'Email not verified.'})
             token = get_random_string(length=32)
             
-            # Store the token in the user's profile or another appropriate model
             user.userprofile.reset_token = token
             user.userprofile.save()
 
-            # Generate the reset link with the hash fragment
             reset_url = request.build_absolute_uri('/') + f'#setnewpass?token={token}'
             send_mail(
                 'Password Reset',
@@ -233,7 +231,6 @@ class SetNewPasswordView(View):
             user.password = make_password(new_password)
             user.save()
 
-            # Clear the reset token
             profile.reset_token = ''
             profile.save()
 
@@ -269,9 +266,9 @@ class SendFriendRequestView(View):
      def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            print(f"Request body: {data}")  # Debug: print the request body
+            print(f"Request body: {data}")
             to_user_username = data.get('to_user_username')
-            print(f"Username received: {to_user_username}")  # Debug: print the received username
+            print(f"Username received: {to_user_username}")
 
             if not to_user_username:
                 return JsonResponse({'success': False, 'message': 'Username not provided.'})
@@ -341,7 +338,6 @@ class GetFriendsView(View):
             friends = friendship.users.all()
             friends_list = []
             for friend in friends:
-                # Get the friend's profile and status
                 profile = UserProfile.objects.get(user=friend)
                 friends_list.append({
                     'username': friend.username,
@@ -352,26 +348,23 @@ class GetFriendsView(View):
             return JsonResponse({'friends': []})
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')  # Exempt CSRF for simplicity
+@method_decorator(csrf_exempt, name='dispatch')
 class UpdateStatusView(View):
 
     def post(self, request, *args, **kwargs):
         try:
-            # Parse the request body
+
             data = json.loads(request.body)
             status = data.get('status')
             user = request.user
 
-            # Ensure the user is authenticated
             if user.is_authenticated:
-                # Get user profile and update the status
                 profile = UserProfile.objects.get(user=user)
                 profile.status = status
                 profile.save()
 
                 update_status_and_notify_friends(user, status)
                 print(profile.status)
-                # Respond with a success message
                 return JsonResponse({'status': 'success', 'message': 'Status updated successfully'})
             else:
                 return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
@@ -418,17 +411,13 @@ class SendMessageView(View):
             recipient_username = data.get('recipient_username')
             content = data.get('content')
 
-            # Retrieve logged-in user
             sender = request.user
-            # Retrieve recipient user
             recipient = get_object_or_404(User, username=recipient_username)
 
-            # Create and save message in the database
             message = Message.objects.create(sender=sender, receiver=recipient, content=content)
             message_id = message.id
             print(f"Message created: {message_id}")
 
-            # WebSocket broadcast
             channel_layer = get_channel_layer()
             room_group_name = f'chat_{recipient_username}'
             async_to_sync(channel_layer.group_send)(
@@ -518,34 +507,27 @@ class GameHistoryView(View):
 class SaveGameHistoryView(View):
     def post(self, request, *args, **kwargs):
         try:
-            # Parse the JSON data from the request
             data = json.loads(request.body)
             print(request.body)
 
-            # The logged-in user is always one of the players
             logged_in_user = request.user
 
-            # The opponent's username
             opponent_username = data.get('player2_username')
             try:
-                # Try to fetch the opponent user
                 opponent = User.objects.get(username=opponent_username)
             except User.DoesNotExist:
-                # If the opponent does not exist, create a guest or temporary user
                 opponent = User.objects.create(username=opponent_username)
 
-            # Determine the winner
             if data['winner_username'] == opponent_username:
                 winner = opponent_username
             else:
                 winner = logged_in_user
 
-            # Create a new GameHistory record
             game_history = GameHistory.objects.create(
-                player1=logged_in_user,  # The logged-in user
-                player2=opponent,        # The opponent (possibly newly created)
-                score_player1=data['score_player1'],  # Logged-in user's score
-                score_player2=data['score_player2'],  # Opponent's score
+                player1=logged_in_user, 
+                player2=opponent,
+                score_player1=data['score_player1'],
+                score_player2=data['score_player2'],
                 winner=winner,
             )
 
@@ -568,16 +550,13 @@ class LogoutView(View):
 class FriendProfileView(View):
     def get(self, request, username):
         try:
-            # Fetch user by username
             user = User.objects.get(username=username)
             profile = UserProfile.objects.get(user=user)
             
-            # Get the user's game history, ordered by the latest date played
             game_history = GameHistory.objects.filter(
                 models.Q(player1=user) | models.Q(player2=user)
             ).order_by('-date_played')[:20]
             
-            # Prepare the response data
             data = {
                 'nickname': user.username,
                 'status': profile.status,
@@ -585,7 +564,7 @@ class FriendProfileView(View):
                 'history': [{
                     'player1': game.player1.username,
                     'player2': game.player2.username,
-                    'winner': game.winner.username if game.winner else 'N/A',  # Handle null winners
+                    'winner': game.winner.username if game.winner else 'N/A',
                     'score_player1': game.score_player1,
                     'score_player2': game.score_player2,
                     'date_played': game.date_played.strftime('%Y-%m-%d'),

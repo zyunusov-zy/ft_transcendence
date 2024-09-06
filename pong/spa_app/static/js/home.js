@@ -23,7 +23,7 @@ const displayUserData = (data) => {
             avatarElement.src = data.avatar;
         } else {
             console.log("Elements not found, retrying...");
-            setTimeout(checkElements, 100); // Retry after 100ms
+            setTimeout(checkElements, 100);
         }
     };
 
@@ -62,11 +62,10 @@ function initializeHome() {
 
     addFriendButton.addEventListener('click', async () => {
         const friendName = friendNameInput.value;
-        console.log('Friend name to be added:', friendName);  // Log the friend name
+        console.log('Friend name to be added:', friendName);
     
-        // Create the request body
         const requestBody = JSON.stringify({ to_user_username: friendName });
-        console.log('Request body:', requestBody);  // Log the request body
+        console.log('Request body:', requestBody);
     
         // Send the request
         const response = await fetch('/send-friend-request/', {
@@ -81,7 +80,7 @@ function initializeHome() {
         // Log the response
         const responseClone = response.clone();
         const responseText = await responseClone.text();
-        console.log('Response body:', responseText);  // Log the response body
+        console.log('Response body:', responseText);
     
         const result = await response.json();
         if (result.success) {
@@ -102,7 +101,7 @@ function initializeHome() {
         });
     
         if (response.redirected) {
-            window.location.href = response.url; // Redirect to the login page if not authenticated
+            window.location.href = response.url;
             return;
         }
     
@@ -121,7 +120,7 @@ function initializeHome() {
             actionsContainer.classList.add('actions-container');
     
             const acceptLink = document.createElement('a');
-            acceptLink.href = '#'; // Use a placeholder href
+            acceptLink.href = '#';
             acceptLink.classList.add('action-link', 'accept-link');
             acceptLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="green" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-1.41 17.41l-5-5a.996.996 0 1 1 1.41-1.41L11 14.59l6.29-6.29a.996.996 0 1 1 1.41 1.41l-7 7a.996.996 0 0 1-1.41 0z"/></svg>`;
             acceptLink.addEventListener('click', (event) => {
@@ -130,7 +129,7 @@ function initializeHome() {
             });
     
             const rejectLink = document.createElement('a');
-            rejectLink.href = '#'; // Use a placeholder href
+            rejectLink.href = '#';
             rejectLink.classList.add('action-link', 'reject-link');
             rejectLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" width="24" height="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>`;
             rejectLink.addEventListener('click', (event) => {
@@ -187,7 +186,7 @@ function initializeHome() {
             }
             const chatIcon = document.createElement('span');
             chatIcon.classList.add('chat-icon');
-            chatIcon.innerHTML = '&#x1F4AC;'; // Unicode for chat bubble icon
+            chatIcon.innerHTML = '&#x1F4AC;';
             chatIcon.addEventListener('click', () => openChatBox(friend.username, globApp));
 
             console.log(statusIcon);
@@ -210,8 +209,8 @@ function initializeHome() {
         const result = await response.json();
         if (result.success) {
             alert('Friend request accepted');
-            loadRequests(); // Refresh the list of requests
-            loadFriends();  // Refresh the list of friends
+            loadRequests();
+            loadFriends();
         } else {
             alert(result.message);
         }
@@ -229,7 +228,7 @@ function initializeHome() {
         const result = await response.json();
         if (result.success) {
             alert('Friend request rejected');
-            loadRequests(); // Refresh the list of requests
+            loadRequests();
         } else {
             alert(result.message);
         }
@@ -244,7 +243,6 @@ function initializeHome() {
         document.querySelector('.chats-box').style.display = 'none';
         document.querySelector('.request-box').style.display = 'none';
     
-        // Call any function to load friends if needed
         loadFriends();
     });
     
@@ -256,7 +254,7 @@ function initializeHome() {
         document.querySelector('.chats-box').style.display = 'none';
         document.querySelector('.friends-box').style.display = 'none';
     
-        loadRequests(); // Load requests when the Requests link is clicked
+        loadRequests();
     });
 
     function Status() {
@@ -273,7 +271,7 @@ function initializeHome() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'), // Important to include CSRF token for POST requests in Django
+                    'X-CSRFToken': getCookie('csrftoken'),
                 },
                 body: JSON.stringify({ status: status })
             })
@@ -318,13 +316,12 @@ function initializeHome() {
         .then(response => response.json())
         .then(data => {
             const historyBox = document.getElementById('historyBox');
-            historyBox.innerHTML = ''; // Clear existing history
+            historyBox.innerHTML = '';
     
             data.history.forEach(game => {
                 const gameRecord = document.createElement('div');
                 gameRecord.classList.add('game-record');
                 
-                // Determine the classes based on the winner
                 const player1Class = game.player1 === game.winner ? 'winner' : 'loser';
                 const player2Class = game.player2 === game.winner ? 'winner' : 'loser';
     
@@ -345,7 +342,6 @@ function initializeHome() {
     });
 
     playLink.addEventListener('click', function(e){
-        // play box
         e.preventDefault();
         document.querySelector('.play-box').style.display = 'flex';
         document.querySelector('.history-box').style.display = 'none';
@@ -362,22 +358,19 @@ function initializeHome() {
     document.getElementById('PlayWithFriendSameButton').addEventListener("click", function(event) {
         event.preventDefault();
         
-        // Show the form to get the opponent's username
+
         document.getElementById('opponentFormContainer').style.display = 'flex';
     });
     
     document.getElementById('opponentForm').addEventListener('submit', function(event) {
         event.preventDefault();
         
-        // Get the opponent's username from the form
         const opponentUsername = document.getElementById('opponent_username').value;
         const own = document.getElementById('own_username').value;
 
-        // Initialize the game with the provided opponent username
         const gameAppS = new GameAPPS(own, opponentUsername, 0);
         gameAppS.init();
         
-        // Optionally, hide the form after submission
         document.getElementById('opponentFormContainer').style.display = 'none';
     });
 
@@ -397,7 +390,6 @@ function initializeHome() {
         });
     });
     
-    // Attach event listeners to all links in the game-links
     document.querySelectorAll('.game-links a').forEach(function(link) {
         link.addEventListener('click', function() {
             addBorderM(this);
@@ -421,17 +413,14 @@ function initializeHome() {
     const submitPlayersBtn = document.getElementById('submitPlayersBtn');
     if(!closeM || !closeM2 || !submitPlayersBtn)
         return;
-    // Bind the close button for the number of players modal
     document.getElementById('closePlayersModalBtn').addEventListener('click', () => {
         tournament.closeModal('numberOfPlayersModal');
     });
 
-    // Bind the submit button for the number of players modal
     document.getElementById('submitPlayersBtn').addEventListener('click', () => {
         tournament.generatePlayerInputs();
     });
 
-    // Bind the close button for the player form modal
     document.getElementById('closePlayerFormModalBtn').addEventListener('click', () => {
         tournament.closeModal('playerFormModal');
     });
@@ -443,14 +432,12 @@ function initializeHome() {
 
 
 function addBorder(element) {
-    // Remove border from all links
     var links = document.querySelectorAll('.side-links a');
     links.forEach(function(link) {
         link.style.borderBottom = 'none';
         link.style.color = 'white';
     });
 
-    // Add border to the clicked link
     element.style.borderBottom = '2px solid white';
     element.style.color = '#C33149';
 }
@@ -479,7 +466,6 @@ function attachEventListeners() {
         });
     }
 
-    // Ensure elements exist before adding event listeners
     const friendsLink = document.getElementById('friendsLink');
     const requestsLink = document.getElementById('requestsLink');
 

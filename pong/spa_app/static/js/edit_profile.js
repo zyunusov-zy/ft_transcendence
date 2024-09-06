@@ -41,7 +41,6 @@ function showEditProfileModal() {
                 const data = await response.json();
                 if (data.success) {
                     console.log('Profile updated successfully');
-                    // Optionally close the modal and refresh profile info
                     modal.style.display = 'none';
                     location.reload();
                 } else {

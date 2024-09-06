@@ -111,8 +111,8 @@ class Tournament {
     
         if (this.players.length % 2 !== 0) {
             const byePlayerIndex = Math.floor(Math.random() * this.players.length);
-            const byePlayer = this.players.splice(byePlayerIndex, 1)[0]; // Remove the bye player from the list
-            pairs.push([byePlayer, null]); // Add the player with a bye
+            const byePlayer = this.players.splice(byePlayerIndex, 1)[0]; 
+            pairs.push([byePlayer, null]);
             console.log(`Bye assigned to player: ${byePlayer}`);
         }
     
@@ -139,7 +139,7 @@ class Tournament {
             }
     
             alert(`Starting match between ${player1} and ${player2}`);
-            const gameAppS = new GameAPPS(player1, player2, 1); // Initialize the game
+            const gameAppS = new GameAPPS(player1, player2, 1);
             const winner = await gameAppS.init();
     
             console.log("Match completed. Winner:", winner);
@@ -178,7 +178,6 @@ class Tournament {
 
     getBracketHTML(winner) {
         let bracketHTML = '';
-        // Create the bracket layout
         this.currentRoundPairs.forEach(pair => {
             bracketHTML += `<div class="bracket-pair">`;
             pair.forEach(player => {
@@ -208,22 +207,22 @@ class Tournament {
             console.log(`Player 2: ${player2}`);
             try {
                 const winner = await this.runMatch(player1, player2);
-                this.winners.push(winner); // Store the winner for the next round
+                this.winners.push(winner);
                 console.log(`Winner of the match: ${winner}`);
             } catch (error) {
                 console.error("Error running the match:", error);
             }
         } else {
             console.log("All matches in the current round are complete.");
-            this.players = this.winners; // Move the winners to the next round
-            this.winners = []; // Reset the winners array for the next round
-            this.currentMatchIndex = 0; // Reset match index for the next round
+            this.players = this.winners;
+            this.winners = [];
+            this.currentMatchIndex = 0;
             
             if (this.players.length > 1) {
-                this.currentRoundPairs = this.organizeIntoPairs(); // Set up pairs for the next round
-                await this.runRound(this.currentRoundPairs); // Start the next round
+                this.currentRoundPairs = this.organizeIntoPairs();
+                await this.runRound(this.currentRoundPairs);
             } else {
-                const champion = this.players[0]; // Last remaining player
+                const champion = this.players[0];
                 if (champion) {
                     alert(`${champion} is the tournament champion!`);
                     document.getElementById('gameCon').style.display = 'none';
@@ -243,34 +242,30 @@ class Tournament {
         const winners = [];
         for (const [player1, player2] of pairs) {
             console.log(`Running match for pair: ${player1} vs ${player2}`);
-            const winner = await this.runMatch(player1, player2); // Get the winner for each pair
+            const winner = await this.runMatch(player1, player2);
             winners.push(winner);
             console.log(`Match result: ${winner} is the winner`);
             await this.waitForNextMatch();
         }
         console.log("Winners of the round:", winners);
-        this.players = winners; // Update players for the next round
-        this.currentRoundPairs = this.organizeIntoPairs(); // Set up pairs for the next round
+        this.players = winners; 
+        this.currentRoundPairs = this.organizeIntoPairs();
     }
 
     async waitForNextMatch() {
         return new Promise((resolve) => {
             console.log("Waiting for user to start the next match");
     
-            // Check if the button exists before trying to interact with it
             const nextMatchButton = document.getElementById('nextMatchButton');
             if (nextMatchButton) {
-                // Function to handle the button click
                 const handleNextMatch = () => {
                     nextMatchButton.removeEventListener('click', handleNextMatch);
                     resolve();
                 };
     
-                // Add event listener to the button
                 nextMatchButton.addEventListener('click', handleNextMatch);
             } else {
                 console.error("Next Match button not found.");
-                // Resolve immediately if the button is not found
                 resolve();
             }
         });
@@ -280,7 +275,7 @@ class Tournament {
         console.log("Starting the tournament");
         this.activeTournament = true;
     
-        this.shufflePlayers(); // Shuffle players before starting
+        this.shufflePlayers();
     
         const totalRounds = this.calculateTotalRounds(this.players.length);
         console.log(`Total rounds: ${totalRounds}`);
@@ -289,10 +284,10 @@ class Tournament {
             if(round === totalRounds)
                 this.lastRound = true;
             if (this.players.length > 1) {
-                this.currentRoundPairs = this.organizeIntoPairs(); // Set pairs for the current round
-                await this.runRound(this.currentRoundPairs); // Run the current round
+                this.currentRoundPairs = this.organizeIntoPairs();
+                await this.runRound(this.currentRoundPairs);
             } else {
-                const champion = this.players[0]; // Last remaining player
+                const champion = this.players[0];
                 if (champion) {
                     alert(`${champion} is the tournament champion!`);
                     document.getElementById('gameCon').style.display = 'none';
@@ -302,11 +297,11 @@ class Tournament {
                 } else {
                     console.error("Error: No champion found.");
                 }
-                break; // Exit the loop if tournament is complete
+                break;
             }
         }
     
-        this.resetTournament(); // Reset the tournament
+        this.resetTournament();
     }
 
     calculateTotalRounds(numPlayers) {

@@ -18,8 +18,7 @@ const handleLoginSub = async (event) => {
         const data = await response.json();
         if (data.success) {
             console.log('Login successful');
-            // Redirect or navigate to the home page
-            window.location.href = '/#home'; // or use a router method if available
+            window.location.href = '/#home';
         } else {
             console.error('Login failed', data.errors);
             displayLoginError(data.errors);
