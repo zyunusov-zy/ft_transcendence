@@ -28,6 +28,7 @@ from asgiref.sync import async_to_sync
 from django.db import models
 from .consumers import update_status_and_notify_friends, sanitize_group_name
 
+
 class BaseTemplateView(View):
     template_name = 'base.html'
 
@@ -503,44 +504,6 @@ class GameHistoryView(View):
         return JsonResponse({'history': history})
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
-class SaveGameHistoryView(View):
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body)
-            print(request.body)
-
-            logged_in_user = request.user
-
-            opponent_username = data.get('player2_username')
-            try:
-                opponent = User.objects.get(username=opponent_username)
-            except User.DoesNotExist:
-                opponent = User.objects.create(username=opponent_username)
-
-            if data['winner_username'] == opponent_username:
-                winner = opponent_username
-            else:
-                winner = logged_in_user
-
-            game_history = GameHistory.objects.create(
-                player1=logged_in_user, 
-                player2=opponent,
-                score_player1=data['score_player1'],
-                score_player2=data['score_player2'],
-                winner=winner,
-            )
-
-            # Return a success response
-            return JsonResponse({'message': 'Game history saved successfully.'}, status=201)
-
-        except KeyError as e:
-            return JsonResponse({'error': f'Missing field in request: {str(e)}'}, status=400)
-        except Exception as e:
-            print(e)
-            return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)
-
-@method_decorator(login_required, name='dispatch')
 class LogoutView(View):
     def post(self, request):
         logout(request)
@@ -574,3 +537,23 @@ class FriendProfileView(View):
         
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
+
+class OAuthConfigView(View):
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({
+            'client_id': settings.FORTYTWO_CLIENT_ID,
+            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            'auth_url': settings.FORTYTWO_AUTH_URL
+        })
+
+class Auth42CallbackView(View):
+    def get(self, request, *args, **kwargs):
+        code = request.GET.get('code')
+        if not code:
+            return redirect('/#login')
+        # check succes
+
+        # send needed sec key, clien id and so on.
+        # get user data save to database and then redirect user to home
+
+        return redirect('/#login')

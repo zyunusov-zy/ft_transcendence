@@ -378,16 +378,6 @@ class GameAPPS {
         this.winnerS = winner;
         console.log("I am in the handleGameOver: ", this.winnerS);
         // Display the winner
-        const gameData = {
-            player1_username: this.players.player1.username,
-            player2_username: this.players.player2.username,
-            score_player1: this.players.player1.score,
-            score_player2: this.players.player2.score,
-            winner_username: winner,
-        };
-        console.log("TOurnament:", this.tournament);
-        if ( this.tournament === 0)
-            this.saveGameHistory(gameData);
         this.cleanUp(); // Clean up variables
         if ( this.tournament === 0)
             this.displayWinner(winner);
@@ -408,29 +398,6 @@ class GameAPPS {
         while (gameCon.firstChild) {
             gameCon.removeChild(gameCon.firstChild);
         } 
-    }
-
-    async saveGameHistory(gameData)
-    {
-        try {
-            const response = await fetch('/save-game-history/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify(gameData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save game history');
-            }
-
-            const data = await response.json();
-            console.log('Game history saved successfully:', data.message);
-        } catch (error) {
-            console.log("Error occured while saving game History", error);
-        }
     }
 
 	animate() {

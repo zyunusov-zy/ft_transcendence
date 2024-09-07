@@ -10,3 +10,4 @@ pip install channels_redis
 sudo apt-get install redis-server
 pip install redis
 sudo service redis-server restart
+pip install requests

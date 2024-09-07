@@ -34,12 +34,15 @@ from .views import (
     # Logout
     LogoutView,
     CheckAuthenticationView,
-    SaveGameHistoryView,
     FriendProfileView,
 
     # Block
     UnblockUserView,
-    BlockUserView
+    BlockUserView,
+
+    # 42OAuth
+    OAuthConfigView,
+    Auth42CallbackView
 )
 
 
@@ -67,9 +70,10 @@ urlpatterns = [
     path('api/message/send/', SendMessageView.as_view(), name='send-message'),
     path('api/game-history/', GameHistoryView.as_view(), name='game-history'),
     path('api/logout/', LogoutView.as_view(), name='logout'),
-    path('save-game-history/', SaveGameHistoryView.as_view(), name='save-game-history'),
     path('api/friend-profile/<str:username>/', FriendProfileView.as_view(), name='friend-profile'),
     path('update-status/', UpdateStatusView.as_view(), name='update_status'),
     path('block/<str:friend_username>/', BlockUserView.as_view(), name='block_user'),
     path('unblock/<str:friend_username>/', UnblockUserView.as_view(), name='unblock_user'),
+    path('api/oauth/config/', OAuthConfigView.as_view(), name='oauth_config'),
+    path('auth42/', Auth42CallbackView.as_view(), name='auth42_callback'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
