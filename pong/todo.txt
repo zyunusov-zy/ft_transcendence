@@ -26,6 +26,8 @@ Maybe I can add easy:
 
 MB hard but mostly done:
 
+• Major module: Implement Two-Factor Authentication (2FA) and JWT
+
 • Major module: Replacing Basic Pong with Server-Side Pong and Implementing
 an API.
 

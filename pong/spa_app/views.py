@@ -247,8 +247,8 @@ class EditProfileView(View):
         user = request.user
         avatar = request.FILES.get('avatar')
 
-        if not nickname and not avatar:
-            return JsonResponse({'success': False, 'error': 'At least one of nickname or avatar must be provided.'})
+        if not avatar:
+            return JsonResponse({'success': False, 'error': 'Avatar must be provided.'})
 
         try:
             user_profile = user.userprofile
