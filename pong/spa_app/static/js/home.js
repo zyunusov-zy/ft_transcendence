@@ -374,6 +374,10 @@ function initializeHome() {
         document.getElementById('opponentFormContainer').style.display = 'none';
     });
 
+    document.getElementById('closeFormButton').addEventListener('click', function() {
+        document.getElementById('opponentFormContainer').style.display = 'none';
+    });
+
     let firstLinkF = document.querySelector('.side-links a:first-child');
     if (firstLinkF) {
         addBorder(firstLinkF);

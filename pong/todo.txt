@@ -2,8 +2,6 @@ Docker
 change later from ws to wss and enable an HTTPS connection
 
 
-0)Check history save in consumer smth wrong 
-
 1)Need to do error hadnling for a Server
 
 Modules: 6
@@ -19,6 +17,7 @@ Modules: 6
 
 Maybe I can add easy:
 
+• Major module: Implement Two-Factor Authentication (2FA) and JWT
 • Minor module: Game Customization Options.
 • Minor module: User and Game Stats Dashboards
 • Minor module: Expanding Browser Compatibility
@@ -26,7 +25,6 @@ Maybe I can add easy:
 
 MB hard but mostly done:
 
-• Major module: Implement Two-Factor Authentication (2FA) and JWT
 
 • Major module: Replacing Basic Pong with Server-Side Pong and Implementing
 an API.
