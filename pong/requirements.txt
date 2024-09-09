@@ -1,0 +1,9 @@
+Django>=4.2
+daphne>=3.0.0
+channels>=3.0.0
+channels-redis>=3.3.1
+psycopg2-binary>=2.9.3
+redis>=4.0.0
+requests>=2.25.1
+python-dotenv>=0.19.0
+Pillow

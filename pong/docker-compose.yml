@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    networks:
+      - backend
+
+  django:
+    build: .
+    container_name: django
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/src/app
+    environment:
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      EMAIL_BACKEND: ${EMAIL_BACKEND}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      FORTYTWO_AUTH_URL: ${FORTYTWO_AUTH_URL}
+      FORTYTWO_CLIENT_ID: ${FORTYTWO_CLIENT_ID}
+      FORTYTWO_CLIENT_SECRET: ${FORTYTWO_CLIENT_SECRET}
+      FORTYTWO_REDIRECT_URI: ${FORTYTWO_REDIRECT_URI}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./spa_app/static:/usr/src/app/static
+    ports:
+      - "80:80"
+    depends_on:
+      - django
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:
