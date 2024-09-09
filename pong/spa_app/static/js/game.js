@@ -312,7 +312,7 @@ class GameApp {
         }
     }
 
-    // onResize() {
+    // onResize = () => {
     //     const newWidth = window.innerWidth;
     //     const newHeight = window.innerHeight;
     //     this.camera.aspect = newWidth / newHeight;

@@ -374,6 +374,10 @@ function initializeHome() {
         document.getElementById('opponentFormContainer').style.display = 'none';
     });
 
+
+    const closeBf = document.getElementById('closeFormButton');
+    if (!closeBf)
+        return;
     document.getElementById('closeFormButton').addEventListener('click', function() {
         document.getElementById('opponentFormContainer').style.display = 'none';
     });

@@ -1,8 +1,10 @@
-Docker 
+1)Docker
+2)SSL/HTTPS
+
 change later from ws to wss and enable an HTTPS connection
 
 
-1)Need to do error hadnling for a Server
+0)Need to do error hadnling for a Server
 
 Modules: 6
 
@@ -17,16 +19,24 @@ Modules: 6
 
 Maybe I can add easy:
 
-• Major module: Implement Two-Factor Authentication (2FA) and JWT
+1)  • Major module: Implement Two-Factor Authentication (2FA) and JWT
 • Minor module: Game Customization Options.
 • Minor module: User and Game Stats Dashboards
 • Minor module: Expanding Browser Compatibility
+• Minor module: Multiple language supports.
 
 
 MB hard but mostly done:
 
 
-• Major module: Replacing Basic Pong with Server-Side Pong and Implementing
-an API.
+• Major module: Implementing a remote authentication.
 
-• Major module: Implementing a remote authentication.(on freeze cant get key to access)
+
+Unexpected disconnections and lags have to be handled. The game and the
+website must not crash when a user is experiencing lags or is disconnected.
+Handling such issues in an efficient way is appreciated but not mandatory:
+
+Pause the game for a defined duration.
+Disconnected users can reconnect.
+Lagging users can catch up to the match.
+And so forth. Any solution is acceptable. The only requirement is: the game should not crash. (ask)
