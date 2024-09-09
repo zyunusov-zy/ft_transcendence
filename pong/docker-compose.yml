@@ -10,6 +10,11 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     networks:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
@@ -41,8 +46,10 @@ services:
       FORTYTWO_CLIENT_SECRET: ${FORTYTWO_CLIENT_SECRET}
       FORTYTWO_REDIRECT_URI: ${FORTYTWO_REDIRECT_URI}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - backend
     ports:
