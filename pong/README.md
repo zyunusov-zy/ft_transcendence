@@ -1,4 +1,5 @@
-### RUN  to start PONG42
+### To start PONG42
+Copy the .env data from discord
 docker-compose down --volumes --rmi all
 docker-compose up --build
 
