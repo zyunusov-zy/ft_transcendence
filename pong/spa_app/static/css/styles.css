@@ -919,7 +919,6 @@ body, html {
     fill: red;
 }
 
-
 /* Game Request */
 #gameRequestOverlay {
     position: fixed;
@@ -935,11 +934,50 @@ body, html {
 }
 
 #gameRequestContainer {
-    background: white;
+    background: #100C4F; /* White background for the container */
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 12px; /* Rounded corners for the container */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
     text-align: center;
+    border: 2px solid #100C4F; /* Border color */
+    width: 300px;
+    color: white;
+}
+
+/* Style for the buttons */
+#acceptGameRequest,
+#rejectGameRequest {
+    background: #FFFFFF; /* White background for buttons */
+    border: 2px solid;
+    border-radius: 6px; /* Rounded corners for buttons */
+    color: #FFFFFF; /* White text color */
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 5px;
+    transition: background-color 0.3s, color 0.3s; /* Smooth transition for hover effect */
+}
+
+/* Accept button specific styles */
+#acceptGameRequest {
+    border-color: #28a745; /* Green border for accept button */
+    background: #28a745; /* Green background */
+}
+
+#acceptGameRequest:hover {
+    background: #218838; /* Darker green on hover */
+    color: #FFFFFF; /* White text on hover */
+}
+
+/* Reject button specific styles */
+#rejectGameRequest {
+    border-color: #dc3545; /* Red border for reject button */
+    background: #dc3545; /* Red background */
+}
+
+#rejectGameRequest:hover {
+    background: #c82333; /* Darker red on hover */
+    color: #FFFFFF; /* White text on hover */
 }
 
 #scoreboard {
