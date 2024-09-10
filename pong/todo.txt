@@ -1,11 +1,11 @@
-Docker 
 change later from ws to wss and enable an HTTPS connection
 
 
-1)Need to do error hadnling for a Server
+1. Need to do error hadnling for a Server
 
 Modules: 6
 
+Docker 
 • Major module: Use a Framework as backend.
 • Minor module: Use a front-end framework or toolkit.
 • Minor module: Use a database for the backend -and more
