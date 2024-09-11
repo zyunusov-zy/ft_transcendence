@@ -29,6 +29,9 @@ from django.db import models
 from .consumers import update_status_and_notify_friends, sanitize_group_name
 from rest_framework_simplejwt.tokens import RefreshToken
 import requests
+from django.utils import timezone
+from .utils import jwt_required
+
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -63,11 +66,31 @@ class LoginView(View):
                     refresh = RefreshToken.for_user(user)
 
                     response = JsonResponse({'success': True})
+
+                    access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
+                    refresh_token_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+
+                    access_token_expiry = timezone.now() + access_token_lifetime
+                    refresh_token_expiry = timezone.now() + refresh_token_lifetime
+
+                    print(access_token_expiry)
+                    print(refresh_token_expiry)
+
                     response.set_cookie(
-                        'access_token', str(refresh.access_token), httponly=True, secure=True, samesite='Lax'
+                        'access_token',
+                        str(refresh.access_token),
+                        httponly=True,
+                        secure=True,
+                        samesite='Lax',
+                        expires=access_token_expiry
                     )
                     response.set_cookie(
-                        'refresh_token', str(refresh), httponly=True, secure=True, samesite='Lax'
+                        'refresh_token',
+                        str(refresh),
+                        httponly=True,
+                        secure=True,
+                        samesite='Lax',
+                        expires=refresh_token_expiry
                     )
                     return response
                 elif profile and not profile.email_verified:
@@ -151,8 +174,9 @@ class VerifyEmailView(View):
         else:
             return redirect(f'/?verification=failed&uidb64={uidb64}&token={token}#login')
 
-@method_decorator(login_required, name='dispatch')
+
 class UserDataView(LoginRequiredMixin, View):
+    @jwt_required
     def get(self, request, *args, **kwargs):
         user = request.user
         try:
@@ -250,9 +274,10 @@ class SetNewPasswordView(View):
         except UserProfile.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid token.'})
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
+# @method_decorator(login_required, name='dispatch')
+# @method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(View):
+    @jwt_required
     def post(self, request, *args, **kwargs):
         user = request.user
         avatar = request.FILES.get('avatar')
@@ -271,10 +296,10 @@ class EditProfileView(View):
         except UserProfile.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Profile does not exist.'})
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
+
 class SendFriendRequestView(View):
-     def post(self, request, *args, **kwargs):
+    @jwt_required
+    def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
             print(f"Request body: {data}")
@@ -301,8 +326,9 @@ class SendFriendRequestView(View):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
 
-@method_decorator(csrf_protect, name='dispatch')
+
 class AcceptFriendRequestView(View):
+    @jwt_required
     def post(self, request, request_id, *args, **kwargs):
         try:
             friend_request = FriendRequest.objects.get(id=request_id)
@@ -316,8 +342,9 @@ class AcceptFriendRequestView(View):
             return JsonResponse({'success': True, 'message': 'Friend request accepted.'})
         return JsonResponse({'success': False, 'message': 'Unauthorized.'})
 
-@method_decorator(csrf_protect, name='dispatch')
+
 class RejectFriendRequestView(View):
+    @jwt_required
     def post(self, request, request_id, *args, **kwargs):
         try:
             friend_request = FriendRequest.objects.get(id=request_id)
@@ -329,9 +356,9 @@ class RejectFriendRequestView(View):
             return JsonResponse({'success': True, 'message': 'Friend request rejected.'})
         return JsonResponse({'success': False, 'message': 'Unauthorized.'})
 
-@method_decorator(csrf_protect, name='dispatch')
-@method_decorator(login_required, name='dispatch')
+
 class GetFriendRequestsView(View):
+    @jwt_required
     def get(self, request, *args, **kwargs):
         received_requests = FriendRequest.objects.filter(to_user=request.user)
         sent_requests = FriendRequest.objects.filter(from_user=request.user)
@@ -340,9 +367,8 @@ class GetFriendRequestsView(View):
             'sent_requests': [{'id': req.id, 'to_user': req.to_user.username} for req in sent_requests]
         })
 
-@method_decorator(csrf_protect, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class GetFriendsView(View):
+    @jwt_required
     def get(self, request, *args, **kwargs):
         try:
             friendship = Friendship.objects.get(current_user=request.user)
@@ -358,10 +384,8 @@ class GetFriendsView(View):
         except Friendship.DoesNotExist:
             return JsonResponse({'friends': []})
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
 class UpdateStatusView(View):
-
+    @jwt_required
     def post(self, request, *args, **kwargs):
         try:
 
@@ -384,9 +408,8 @@ class UpdateStatusView(View):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
+    @jwt_required
     def get(self, request, username):
         print("HERE!!!!!!!!!!")
         user = request.user
@@ -412,9 +435,8 @@ class MessagesListView(View):
 
         return JsonResponse(message_list, safe=False)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_exempt, name='dispatch')
 class SendMessageView(View):
+    @jwt_required
     def post(self, request):
         try:
             print("Entered the post method")
@@ -454,8 +476,8 @@ class SendMessageView(View):
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
 
-@method_decorator(login_required, name='dispatch')
 class BlockUserView(View):
+    @jwt_required
     def post(self, request, friend_username):
         try:
             friend = get_object_or_404(User, username=friend_username)
@@ -464,8 +486,8 @@ class BlockUserView(View):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-@method_decorator(login_required, name='dispatch')
 class UnblockUserView(View):
+    @jwt_required
     def post(self, request, friend_username):
         try:
             friend = get_object_or_404(User, username=friend_username)
@@ -494,9 +516,8 @@ class UnblockUserView(View):
             return JsonResponse({"error": "User not found."}, status=404)
 
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class GameHistoryView(View):
+    @jwt_required
     def get(self, request, *args, **kwargs):
         games = GameHistory.objects.filter(
             models.Q(player1=request.user) | models.Q(player2=request.user)
@@ -513,7 +534,6 @@ class GameHistoryView(View):
 
         return JsonResponse({'history': history})
 
-@method_decorator(login_required, name='dispatch')
 class LogoutView(View):
     def post(self, request):
         logout(request)
@@ -522,8 +542,8 @@ class LogoutView(View):
         response.delete_cookie('refresh_token')
         return response
 
-@method_decorator(login_required, name='dispatch')
 class FriendProfileView(View):
+    @jwt_required
     def get(self, request, username):
         try:
             user = User.objects.get(username=username)

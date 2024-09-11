@@ -547,7 +547,7 @@ class GameApp {
         this.moveBall();
 
         // const now = Date.now();
-        // if (now - this.lastBallUpdateTime > 300) {  // Adjust the interval as needed
+        // if (now - this.lastBallUpdateTime > 500) {  // Adjust the interval as needed
         //     this.sendBallState();
         //     this.lastBallUpdateTime = now;
         // }

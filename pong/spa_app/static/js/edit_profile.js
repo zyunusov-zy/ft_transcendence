@@ -18,13 +18,11 @@ function showEditProfileModal() {
             modal.style.display = 'none';
         }
     }
-
     const editProfileForm = document.getElementById('editProfileForm');
     if (editProfileForm) {
         editProfileForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const formData = new FormData(editProfileForm);
-
             try {
                 const response = await fetch('/api/edit-profile/', {
                     method: 'POST',
@@ -49,7 +47,7 @@ function showEditProfileModal() {
                 }
             } catch (error) {
                 console.error('Error submitting form:', error);
-                document.getElementById('error-message').innerText = 'An error occurred. Please try again.';
+                document.getElementById('error-message').innerText = error;
             }
         });
     }

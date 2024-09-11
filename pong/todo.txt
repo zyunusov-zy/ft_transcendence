@@ -8,6 +8,10 @@ change later from ws to wss and enable an HTTPS connection
 42 API:
 !)working but I need to think about same usernames
 
+• Major module: Implement Two-Factor Authentication (2FA) and JWT
+partially done
+need to think about refreshing token
+
 GAME REMOTE and GLobal SOCKETS
 1)Global socket should change to offline if user disconnects without logout
 2) need to check remote game sometimes it is not synch
@@ -18,7 +22,7 @@ GAME REMOTE and GLobal SOCKETS
 6) add user notify to reset password thing when email sent or for any error
 7) need to check reset password sometimes failing to fetch
 
-Modules: 6
+Modules: 7
 
 • Major module: Use a Framework as backend.
 • Minor module: Use a front-end framework or toolkit.
@@ -27,6 +31,8 @@ Modules: 6
 • Major module: Remote players
 • Major module: Live Chat
 • Major module: Implementing Advanced 3D Techniques
+• Major module: Implementing a remote authentication.(on freeze cant get key to access)
+42 API (partially done)
 
 
 Maybe I can add easy:
@@ -42,6 +48,3 @@ MB hard but mostly done:
 
 • Major module: Replacing Basic Pong with Server-Side Pong and Implementing
 an API.
-
-• Major module: Implementing a remote authentication.(on freeze cant get key to access)
-42 API:
