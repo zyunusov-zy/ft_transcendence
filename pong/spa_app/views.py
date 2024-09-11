@@ -76,20 +76,23 @@ class LoginView(View):
                     print(access_token_expiry)
                     print(refresh_token_expiry)
 
+                    print(str(refresh.access_token))
+
+                    print(str(refresh))
                     response.set_cookie(
                         'access_token',
                         str(refresh.access_token),
                         httponly=True,
-                        secure=True,
-                        samesite='Lax',
+                        # secure=True,
+                        # samesite='Lax',
                         expires=access_token_expiry
                     )
                     response.set_cookie(
                         'refresh_token',
                         str(refresh),
                         httponly=True,
-                        secure=True,
-                        samesite='Lax',
+                        # secure=True,
+                        # samesite='Lax',
                         expires=refresh_token_expiry
                     )
                     return response

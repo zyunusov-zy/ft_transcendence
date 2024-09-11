@@ -19,6 +19,10 @@ def jwt_required(view_func):
         # Access the token from the cookies
         access_token = request.COOKIES.get('access_token')
 
+
+        print(access_token)
+
+        
         if not access_token:
             print("No access token found in cookies.")
             return JsonResponse({'success': False, 'error': 'No access token.'}, status=401)
