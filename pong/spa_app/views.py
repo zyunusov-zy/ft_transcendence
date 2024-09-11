@@ -511,6 +511,7 @@ class GameHistoryView(View):
 class LogoutView(View):
     def post(self, request):
         logout(request)
+        response = JsonResponse({'success': True}, status=200)
         return response
 
 @method_decorator(login_required, name='dispatch')
