@@ -60,15 +60,7 @@ class LoginView(View):
                 if profile and profile.email_verified:
                     auth_login(request, user)
 
-                    refresh = RefreshToken.for_user(user)
-
                     response = JsonResponse({'success': True})
-                    response.set_cookie(
-                        'access_token', str(refresh.access_token), httponly=True, secure=True, samesite='Lax'
-                    )
-                    response.set_cookie(
-                        'refresh_token', str(refresh), httponly=True, secure=True, samesite='Lax'
-                    )
                     return response
                 elif profile and not profile.email_verified:
                     return JsonResponse({'success': False, 'errors': 'Your email is not verified. Please check your email to activate your account.'})
@@ -455,6 +447,7 @@ class SendMessageView(View):
 
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class BlockUserView(View):
     def post(self, request, friend_username):
         try:
@@ -465,6 +458,7 @@ class BlockUserView(View):
             return JsonResponse({"error": str(e)}, status=500)
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class UnblockUserView(View):
     def post(self, request, friend_username):
         try:
@@ -495,7 +489,7 @@ class UnblockUserView(View):
 
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class GameHistoryView(View):
     def get(self, request, *args, **kwargs):
         games = GameHistory.objects.filter(
@@ -517,12 +511,10 @@ class GameHistoryView(View):
 class LogoutView(View):
     def post(self, request):
         logout(request)
-        response = JsonResponse({'success': True}, status=200)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
         return response
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class FriendProfileView(View):
     def get(self, request, username):
         try:
@@ -551,6 +543,7 @@ class FriendProfileView(View):
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class OAuthConfigView(View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({
@@ -559,6 +552,7 @@ class OAuthConfigView(View):
             'auth_url': settings.FORTYTWO_AUTH_URL
         })
 
+@method_decorator(csrf_exempt, name='dispatch')
 class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
