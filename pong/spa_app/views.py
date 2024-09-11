@@ -27,7 +27,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.db import models
 from .consumers import update_status_and_notify_friends, sanitize_group_name
-
+from rest_framework_simplejwt.tokens import RefreshToken
+import requests
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -58,7 +59,17 @@ class LoginView(View):
 
                 if profile and profile.email_verified:
                     auth_login(request, user)
-                    return JsonResponse({'success': True})
+
+                    refresh = RefreshToken.for_user(user)
+
+                    response = JsonResponse({'success': True})
+                    response.set_cookie(
+                        'access_token', str(refresh.access_token), httponly=True, secure=True, samesite='Lax'
+                    )
+                    response.set_cookie(
+                        'refresh_token', str(refresh), httponly=True, secure=True, samesite='Lax'
+                    )
+                    return response
                 elif profile and not profile.email_verified:
                     return JsonResponse({'success': False, 'errors': 'Your email is not verified. Please check your email to activate your account.'})
                 else:
@@ -77,7 +88,6 @@ class LoginView(View):
 @method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
     def post(self, request):
-        print("post signup")
         username = request.POST.get('usernamesignup')
         email = request.POST.get('emailsignup')
         password = request.POST.get('passwordsignup')
@@ -507,7 +517,10 @@ class GameHistoryView(View):
 class LogoutView(View):
     def post(self, request):
         logout(request)
-        return JsonResponse({"success": True}, status=200)
+        response = JsonResponse({'success': True}, status=200)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
 
 @method_decorator(login_required, name='dispatch')
 class FriendProfileView(View):
@@ -550,10 +563,69 @@ class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
         if not code:
-            return redirect('/#login')
-        # check succes
+            print("No authorization code received.")
+            return redirect('/#login?error=Authorization+Failed')
 
-        # send needed sec key, clien id and so on.
-        # get user data save to database and then redirect user to home
+        print(f"Authorization code received: {code}")
 
-        return redirect('/#login')
+        # Exchange code for an access token
+        token_url = 'https://api.intra.42.fr/oauth/token'
+        token_data = {
+            'grant_type': 'authorization_code',
+            'client_id': settings.FORTYTWO_CLIENT_ID,
+            'client_secret': settings.FORTYTWO_CLIENT_SECRET,
+            'code': code,
+            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+        }
+        
+        token_response = requests.post(token_url, data=token_data)
+        if token_response.status_code != 200:
+            print(f"Token exchange failed with status code: {token_response.status_code}")
+            print("Response body:", token_response.text)
+            return redirect('/#login?error=Token+Exchange+Failed')
+        
+        token_info = token_response.json()
+        access_token = token_info.get('access_token')
+        
+        if not access_token:
+            print("No access token received.")
+            return redirect('/#login?error=Invalid+Token')
+        
+        print(f"Access token received: {access_token}")
+
+        # Use the access token to fetch the user's information
+        user_info_url = 'https://api.intra.42.fr/v2/me'
+        headers = {'Authorization': f'Bearer {access_token}'}
+        user_response = requests.get(user_info_url, headers=headers)
+
+        if user_response.status_code != 200:
+            print(f"Failed to fetch user info with status code: {user_response.status_code}")
+            print("Response body:", user_response.text)
+            return redirect('/#login?error=Failed+to+Fetch+User+Info')
+        
+        user_data = user_response.json()
+        print("User data received:", user_data)
+
+        # Extract necessary user info like login (username)
+        username = user_data.get('login')
+        email = user_data.get('email')
+
+        print(f"User login (username): {username}")
+        print(f"User email: {email}")
+
+        # Create or get the user
+        user, created = User.objects.get_or_create(username=username, defaults={'email': email})
+
+        if created:
+            print(f"New user created: {username}")
+            # Optionally handle other profile setup here, but skip email verification
+            UserProfile.objects.get_or_create(user=user)
+        else:
+            print(f"Existing user logged in: {username}")
+
+        # Log the user in
+        auth_login(request, user)
+        print(f"User {username} logged in successfully.")
+
+        # Redirect to home after successful login
+        return redirect('/#home')

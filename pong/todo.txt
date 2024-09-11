@@ -1,7 +1,22 @@
 change later from ws to wss and enable an HTTPS connection
 
 
-1)Need to do error hadnling for a Server
+1)Need to do error handling for a Server
+
+
+• Major module: Implementing a remote authentication.(on freeze cant get key to access)
+42 API:
+!)working but I need to think about same usernames
+
+GAME REMOTE and GLobal SOCKETS
+1)Global socket should change to offline if user disconnects without logout
+2) need to check remote game sometimes it is not synch
+3) need to fix so that if user disconnects I will not save game history 
+4) Mb I can stop game when one user disconnects and inform other user
+
+
+6) add user notify to reset password thing when email sent or for any error
+7) need to check reset password sometimes failing to fetch
 
 Modules: 6
 
@@ -29,12 +44,4 @@ MB hard but mostly done:
 an API.
 
 • Major module: Implementing a remote authentication.(on freeze cant get key to access)
-
-GAME REMOTE
-2) need to check remote game sometimes it is not synch
-3) need to fix so that if user disconnects I will not save game history 
-4) Mb I can stop game when one user disconnects and inform other user
-
-1) Need to do styles for request and so on
-5) I need to check sign up notification of the user  login, signup, new_password
-6) add user notify to new password thing
+42 API:

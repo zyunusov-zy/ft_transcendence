@@ -29,6 +29,12 @@ const handleLoginSub = async (event) => {
 };
 
 const displayLoginError = (error) => {
+    // Remove any existing error messages
+    const existingErrorDiv = document.querySelector('.alert-danger');
+    if (existingErrorDiv) {
+        existingErrorDiv.remove();
+    }
+
     const errorDiv = document.createElement('div');
     errorDiv.classList.add('alert', 'alert-danger', 'mt-3');
     errorDiv.textContent = error;

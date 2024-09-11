@@ -148,19 +148,19 @@ const handleNewPassRes = (token) => {
         event.preventDefault();
         const formData = new FormData(form);
 
+
+        clearPreviousErrors();
+
         const newPassword = formData.get('new_password');
         const confirmPassword = formData.get('confirm_password');
         
-        const errorMessage = document.getElementById('error-message');
-        errorMessage.innerText = '';
-
         if (newPassword !== confirmPassword) {
-            errorMessage.innerText = 'Passwords do not match.';
+            displayError('Passwords do not match.');
             return;
         }
 
         if (newPassword.length < 8) {
-            errorMessage.innerText = 'Password must be at least 8 characters long.';
+            displayError('Password must be at least 8 characters long.');
             return;
         }
 
@@ -169,12 +169,12 @@ const handleNewPassRes = (token) => {
         const symbolRegex = /[!@#$%^&*(),.?":{}|<>]/;
 
         if (!uppercaseRegex.test(newPassword) || !digitRegex.test(newPassword) || !symbolRegex.test(newPassword)) {
-            errorMessage.innerText = 'Password must contain at least one uppercase letter, one digit, and one symbol.';
+            displayError('Password must contain at least one uppercase letter, one digit, and one symbol.');
             return;
         }
 
         formData.append('token', token);
-        
+
         try {
             const response = await fetch('/api/set-new-password/', {
                 method: 'POST',
@@ -187,19 +187,39 @@ const handleNewPassRes = (token) => {
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.statusText}`);
             }
+
             const data = await response.json();
             if (data.success) {
                 console.log('Password reset successful');
                 window.location.href = '#login';
             } else {
-                console.error('Password reset failed', data.error);
-                errorMessage.innerText = data.error;
+                displayError(data.error || 'Password reset failed.');
             }
         } catch (error) {
             console.error('Error submitting form:', error);
-            errorMessage.innerText = 'An error occurred. Please try again.';
+            displayError('An error occurred. Please try again.');
         }
     });
+};
+
+const clearPreviousErrors = () => {
+    const existingErrorDiv = document.querySelector('.alert-danger');
+    if (existingErrorDiv) {
+        existingErrorDiv.remove();
+    }
+};
+
+const displayError = (error) => {
+    clearPreviousErrors();
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.classList.add('alert', 'alert-danger', 'mt-3');
+    errorDiv.textContent = error;
+
+    const form = document.querySelector('#newPassForm');
+    if (form) {
+        form.insertAdjacentElement('beforebegin', errorDiv);
+    }
 };
 
 const validateToken = async (token) => {
@@ -239,7 +259,6 @@ const displayVerificationMessage = (queryParams) => {
 };
 
 const handlePasswordReset = async (event) => {
-    console.log("Pass Reset");
     event.preventDefault();
     const form = event.target;
     const formData = new FormData(form);
