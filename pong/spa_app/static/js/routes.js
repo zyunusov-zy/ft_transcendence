@@ -139,6 +139,39 @@ const LocationHandler = async () => {
     }
 };
 
+const handlePasswordReset = async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // Clear any previous success or error messages
+    clearPreviousMessages();
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method,
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            displayMessage('Password reset email sent successfully', 'success');
+        } else {
+            displayMessage(data.error || 'Password reset failed', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        displayMessage('An error occurred. Please try again.', 'error');
+    }
+};
+
 const handleNewPassRes = (token) => {
     const form = document.getElementById('newPassForm');
     const tokenField = document.getElementById('token');
@@ -149,18 +182,18 @@ const handleNewPassRes = (token) => {
         const formData = new FormData(form);
 
 
-        clearPreviousErrors();
+        clearPreviousMessages();
 
         const newPassword = formData.get('new_password');
         const confirmPassword = formData.get('confirm_password');
         
         if (newPassword !== confirmPassword) {
-            displayError('Passwords do not match.');
+            displayMessage('Passwords do not match.');
             return;
         }
 
         if (newPassword.length < 8) {
-            displayError('Password must be at least 8 characters long.');
+            displayMessage('Password must be at least 8 characters long.');
             return;
         }
 
@@ -169,7 +202,7 @@ const handleNewPassRes = (token) => {
         const symbolRegex = /[!@#$%^&*(),.?":{}|<>]/;
 
         if (!uppercaseRegex.test(newPassword) || !digitRegex.test(newPassword) || !symbolRegex.test(newPassword)) {
-            displayError('Password must contain at least one uppercase letter, one digit, and one symbol.');
+            displayMessage('Password must contain at least one uppercase letter, one digit, and one symbol.');
             return;
         }
 
@@ -193,32 +226,32 @@ const handleNewPassRes = (token) => {
                 console.log('Password reset successful');
                 window.location.href = '#login';
             } else {
-                displayError(data.error || 'Password reset failed.');
+                displayMessage(data.error || 'Password reset failed.');
             }
         } catch (error) {
             console.error('Error submitting form:', error);
-            displayError('An error occurred. Please try again.');
+            displayMessage('An error occurred. Please try again.');
         }
     });
 };
 
-const clearPreviousErrors = () => {
-    const existingErrorDiv = document.querySelector('.alert-danger');
-    if (existingErrorDiv) {
-        existingErrorDiv.remove();
+const clearPreviousMessages = () => {
+    const existingMessageDiv = document.querySelector('.alert');
+    if (existingMessageDiv) {
+        existingMessageDiv.remove();
     }
 };
 
-const displayError = (error) => {
-    clearPreviousErrors();
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.classList.add('alert', 'alert-danger', 'mt-3');
-    errorDiv.textContent = error;
+const displayMessage = (message, type) => {
+    clearPreviousMessages();
 
-    const form = document.querySelector('#newPassForm');
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('alert', `alert-${type === 'success' ? 'success' : 'danger'}`, 'mt-3');
+    messageDiv.textContent = message;
+
+    const form = document.querySelector('form');
     if (form) {
-        form.insertAdjacentElement('beforebegin', errorDiv);
+        form.insertAdjacentElement('beforebegin', messageDiv);
     }
 };
 
@@ -255,34 +288,6 @@ const displayVerificationMessage = (queryParams) => {
         if (loginForm) {
             loginForm.insertAdjacentElement('beforebegin', messageDiv);
         }
-    }
-};
-
-const handlePasswordReset = async (event) => {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
-
-    try {
-        const response = await fetch(form.action, {
-            method: form.method,
-            body: formData,
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
-        }
-        const data = await response.json();
-        if (data.success) {
-            console.log('Password reset email sent successfully');
-        } else {
-            console.error('Password reset failed', data.error);
-        }
-    } catch (error) {
-        console.error('Error submitting form:', error);
     }
 };
 

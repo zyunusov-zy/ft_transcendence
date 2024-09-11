@@ -15,9 +15,6 @@ GAME REMOTE and GLobal SOCKETS
 4) Mb I can stop game when one user disconnects and inform other user
 
 
-6) add user notify to reset password thing when email sent or for any error
-7) need to check reset password sometimes failing to fetch
-
 Modules: 6
 
 • Major module: Use a Framework as backend.
