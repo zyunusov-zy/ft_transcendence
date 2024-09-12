@@ -558,13 +558,10 @@ class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
         if not code:
-            print("No authorization code received.")
             return redirect('/#login?error=Authorization+Failed')
 
-        print(f"Authorization code received: {code}")
-
         # Exchange code for an access token
-        token_url = 'https://api.intra.42.fr/oauth/token'
+        token_url = settings.FORTYTWO_URL_TOKEN
         token_data = {
             'grant_type': 'authorization_code',
             'client_id': settings.FORTYTWO_CLIENT_ID,
@@ -575,52 +572,44 @@ class Auth42CallbackView(View):
         
         token_response = requests.post(token_url, data=token_data)
         if token_response.status_code != 200:
-            print(f"Token exchange failed with status code: {token_response.status_code}")
-            print("Response body:", token_response.text)
             return redirect('/#login?error=Token+Exchange+Failed')
         
         token_info = token_response.json()
         access_token = token_info.get('access_token')
         
         if not access_token:
-            print("No access token received.")
             return redirect('/#login?error=Invalid+Token')
-        
-        print(f"Access token received: {access_token}")
 
-        # Use the access token to fetch the user's information
-        user_info_url = 'https://api.intra.42.fr/v2/me'
+        # Fetch the user's information
+        user_info_url = settings.FORTYTWO_URL_INFO
+        print(user_info_url)
         headers = {'Authorization': f'Bearer {access_token}'}
         user_response = requests.get(user_info_url, headers=headers)
 
         if user_response.status_code != 200:
-            print(f"Failed to fetch user info with status code: {user_response.status_code}")
-            print("Response body:", user_response.text)
             return redirect('/#login?error=Failed+to+Fetch+User+Info')
         
         user_data = user_response.json()
-        print("User data received:", user_data)
 
-        # Extract necessary user info like login (username)
         username = user_data.get('login')
         email = user_data.get('email')
 
-        print(f"User login (username): {username}")
-        print(f"User email: {email}")
+        user = User.objects.filter(email=email).first()
 
-        # Create or get the user
-        user, created = User.objects.get_or_create(username=username, defaults={'email': email})
-
-        if created:
-            print(f"New user created: {username}")
-            # Optionally handle other profile setup here, but skip email verification
-            UserProfile.objects.get_or_create(user=user)
+        if user:
+            print(f"User with email {email} exists, logging in with username: {user.username}")
         else:
-            print(f"Existing user logged in: {username}")
+            original_username = username
+            count = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{original_username}_{count}"
+                count += 1
 
-        # Log the user in
+            user = User.objects.create_user(username=username, email=email)
+            UserProfile.objects.create(user=user)
+            print(f"New user created: {username}")
+
         auth_login(request, user)
-        print(f"User {username} logged in successfully.")
 
-        # Redirect to home after successful login
         return redirect('/#home')
+

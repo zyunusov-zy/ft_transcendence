@@ -3,10 +3,12 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -20,6 +22,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+
+print(BASE_DIR)
 
 INSTALLED_APPS = [
     'daphne',
@@ -168,4 +172,5 @@ FORTYTWO_AUTH_URL= os.environ.get('FORTYTWO_AUTH_URL')
 FORTYTWO_CLIENT_ID = os.environ.get('FORTYTWO_CLIENT_ID')
 FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
 FORTYTWO_CLIENT_SECRET = os.environ.get('FORTYTWO_CLIENT_SECRET')
-
+FORTYTWO_URL_INFO = os.environ.get('FORTYTWO_URL_INFO')
+FORTYTWO_URL_TOKEN = os.environ.get('FORTYTWO_URL_TOKEN')

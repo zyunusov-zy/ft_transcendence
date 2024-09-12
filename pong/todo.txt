@@ -2,20 +2,24 @@ change later from ws to wss and enable an HTTPS connection
 
 
 1)Need to do error handling for a Server
+error page not loading need to handle it
+make one env 
+
+• Major module: Implementing a remote authentication.
+42 API: (working creating id if user exist in the db)
+need to do smth with errors that can occure
 
 
-• Major module: Implementing a remote authentication.(on freeze cant get key to access)
-42 API:
-!)working but I need to think about same usernames
 
 GAME REMOTE and GLobal SOCKETS
-1)Global socket should change to offline if user disconnects without logout
 2) need to check remote game sometimes it is not synch
 3) need to fix so that if user disconnects I will not save game history 
 4) Mb I can stop game when one user disconnects and inform other user
 
 
-Modules: 6
+Global socket should change to offline if user disconnects without logout (now working need to test with others)
+
+Modules: 7
 
 • Major module: Use a Framework as backend.
 • Minor module: Use a front-end framework or toolkit.
