@@ -1,15 +1,4 @@
-change later from ws to wss and enable an HTTPS connection
-
-
-1)Need to do error handling for a Server
-error page not loading need to handle it
-make one env 
-
-• Major module: Implementing a remote authentication.
-42 API: (working creating id if user exist in the db)
-need to do smth with errors that can occure
-
-
+setup docker with nginx with SSL/HTTPS and then change ws to wss channel connections
 
 GAME REMOTE and GLobal SOCKETS
 2) need to check remote game sometimes it is not synch
@@ -28,6 +17,24 @@ Modules: 7
 • Major module: Remote players
 • Major module: Live Chat
 • Major module: Implementing Advanced 3D Techniques
+• Major module: Implementing a remote authentication.
+42 API: (working creating id if user exist in the db)
+
+
+
+
+
+
+
+to check if pass hashed
+SELECT * FROM auth_user WHERE username='';
+
+
+
+
+
+
+
 
 
 Maybe I can add easy:

@@ -64,12 +64,13 @@ const isAuthenticated = async () => {
 
 // Function to handle the location
 const LocationHandler = async () => {
+    console.log("HERERERE");
     let url = window.location.hash;
     let locationEnd = url.indexOf('?') !== -1 ? url.indexOf('?') : url.length;
     let location = url.substring(url.indexOf('#') + 1, locationEnd);
     let queryParams = getQueryParams();
 
-	console.log(location);
+	console.log("query:  ", queryParams);
     if (location.length === 0) {
         location = 'login';
     }
@@ -83,53 +84,67 @@ const LocationHandler = async () => {
         }
     }
 
+    if (queryParams.error && location == 'login')
+    {
+        displayVerificationMessage(queryParams);
+    }
     const route = routes[location] || routes[404];
+
+    console.log("Location: ", location);
+    console.log("Route: " , route);
     try {
         const response = await fetch(route.template);
         if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
-        }
-        const html = await response.text();
-        document.getElementById("content").innerHTML = html;
-        document.title = route.title;
-        attachFormSubmitHandler(location);
-
-		console.log(queryParams);
-		console.log(queryParams.verification);
-        if (queryParams.verification) {
-            displayVerificationMessage(queryParams);
-        }
-
-        if (location === 'home') {
-            console.log("At Home");
-            fetchUserData();
-            const editProfileBtn = document.getElementById('editProfileBtn');
-            console.log("Button");
-            console.log(editProfileBtn);
-            if (editProfileBtn) {
-                editProfileBtn.addEventListener('click', () => {
-                    showEditProfileModal();
-                    console.log("CLICKED");
-                });
-            }
-            initializeHome(); 
-        }
-
-        if (location === 'setnewpass') {
-            console.log("HERE");
-            console.log(queryParams.token);
-            if (queryParams.token) {
-                const isValid = await validateToken(queryParams.token);
-                if (!isValid) {
-                    document.getElementById("content").innerHTML = '<h1>Invalid or expired token</h1>';
-                    document.title = 'Error';
-                } else {
-                    console.log(location);
-                    handleNewPassRes(queryParams.token);
-                }
+            if (response.status === 404) {
+                document.getElementById("content").innerHTML = '<h1>Page Not Found</h1>';
+                document.title = '404 Not Found';
             } else {
-                document.getElementById("content").innerHTML = '<h1>Token is required to reset password</h1>';
-                document.title = 'Error';
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+        }
+        else {
+            const html = await response.text();
+            document.getElementById("content").innerHTML = html;
+            document.title = route.title;
+            attachFormSubmitHandler(location);
+
+            console.log(queryParams);
+            console.log(queryParams.verification);
+            if (queryParams.verification) {
+                displayVerificationMessage(queryParams);
+            }
+
+            if (location === 'home') {
+                console.log("At Home");
+                fetchUserData();
+                const editProfileBtn = document.getElementById('editProfileBtn');
+                console.log("Button");
+                console.log(editProfileBtn);
+                if (editProfileBtn) {
+                    editProfileBtn.addEventListener('click', () => {
+                        showEditProfileModal();
+                        console.log("CLICKED");
+                    });
+                }
+                initializeHome(); 
+            }
+
+            if (location === 'setnewpass') {
+                console.log("HERE");
+                console.log(queryParams.token);
+                if (queryParams.token) {
+                    const isValid = await validateToken(queryParams.token);
+                    if (!isValid) {
+                        document.getElementById("content").innerHTML = '<h1>Invalid or expired token</h1>';
+                        document.title = 'Error';
+                    } else {
+                        console.log(location);
+                        handleNewPassRes(queryParams.token);
+                    }
+                } else {
+                    document.getElementById("content").innerHTML = '<h1>Token is required to reset password</h1>';
+                    document.title = 'Error';
+                }
             }
         }
     } catch (error) {
@@ -269,13 +284,13 @@ const validateToken = async (token) => {
 };
 
 const displayVerificationMessage = (queryParams) => {
-	console.log("HEEEElllloooo");
+    console.log("HEEEElllloooo");
     const verification = queryParams['verification'];
     if (verification) {
-		console.log("HERE")
+        console.log("HERE");
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('alert', 'alert-success', 'mt-1');
-		messageDiv.style.padding = '8px';
+        messageDiv.style.padding = '8px';
         if (verification === 'success') {
             messageDiv.textContent = 'Your email has been verified. You can now log in.';
         } else {
@@ -287,6 +302,12 @@ const displayVerificationMessage = (queryParams) => {
         if (loginForm) {
             loginForm.insertAdjacentElement('beforebegin', messageDiv);
         }
+    }
+
+    if (queryParams.error) {
+            alert(`Error found: ${queryParams.error}`);
+        
+            console.log("Error found:", queryParams.error);
     }
 };
 

@@ -71,12 +71,6 @@ class LoginView(View):
         else:
             return JsonResponse({'success': False, 'errors': 'Invalid username or password'})
 
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("working")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
     def post(self, request):
@@ -111,13 +105,6 @@ class SignupView(View):
             return JsonResponse({'success': True, 'message': 'Verification email sent. Please check your email to verify your account.'})
         except Exception as e:
             return JsonResponse({'success': False, 'errors': str(e)})
-
-
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("get signup")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class FetchCSRFTokenView(View):
@@ -188,12 +175,6 @@ class PasswordResetView(View):
 
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid username or email.'})
-    
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("working")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
 
 class ValidateTokenView(View):
     def get(self, request, *args, **kwargs):
@@ -582,7 +563,6 @@ class Auth42CallbackView(View):
 
         # Fetch the user's information
         user_info_url = settings.FORTYTWO_URL_INFO
-        print(user_info_url)
         headers = {'Authorization': f'Bearer {access_token}'}
         user_response = requests.get(user_info_url, headers=headers)
 
