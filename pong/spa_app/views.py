@@ -528,9 +528,12 @@ class FriendProfileView(View):
 @method_decorator(csrf_exempt, name='dispatch')
 class OAuthConfigView(View):
     def get(self, request, *args, **kwargs):
+        # Dynamically construct the redirect URI
+        redirect_uri = request.build_absolute_uri('/auth42/')
+        print(redirect_uri)
         return JsonResponse({
             'client_id': settings.FORTYTWO_CLIENT_ID,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            'redirect_uri': redirect_uri,
             'auth_url': settings.FORTYTWO_AUTH_URL
         })
 
@@ -541,6 +544,11 @@ class Auth42CallbackView(View):
         if not code:
             return redirect('/#login?error=Authorization+Failed')
 
+        # Dynamically construct the redirect URI
+        redirect_uri = request.build_absolute_uri('/auth42/')
+
+        print(redirect_uri)
+        
         # Exchange code for an access token
         token_url = settings.FORTYTWO_URL_TOKEN
         token_data = {
@@ -548,7 +556,7 @@ class Auth42CallbackView(View):
             'client_id': settings.FORTYTWO_CLIENT_ID,
             'client_secret': settings.FORTYTWO_CLIENT_SECRET,
             'code': code,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            'redirect_uri': redirect_uri,
         }
         
         token_response = requests.post(token_url, data=token_data)
