@@ -546,11 +546,11 @@ class GameApp {
         // this.update();
         this.moveBall();
 
-        // const now = Date.now();
-        // if (now - this.lastBallUpdateTime > 300) {  // Adjust the interval as needed
-        //     this.sendBallState();
-        //     this.lastBallUpdateTime = now;
-        // }
+        const now = Date.now();
+        if (now - this.lastBallUpdateTime > 500) {  // Adjust the interval as needed
+            this.sendBallState();
+            this.lastBallUpdateTime = now;
+        }
 
         // Racket position to stay within table boundaries
         this.racket.position.y = Math.max(-this.tableH / 2 + this.halfRacketHeight, Math.min(this.tableH / 2 - this.halfRacketHeight, this.racket.position.y));
