@@ -58,6 +58,12 @@ function createChatBox(friend, globApp) {
     input.className = 'message-input';
     inputContainer.appendChild(input);
 
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage(friend);
+        }
+    });
+    
     const sendButton = document.createElement('button');
     sendButton.innerText = 'Send';
     sendButton.className = 'send-button';

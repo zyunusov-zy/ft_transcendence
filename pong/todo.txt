@@ -6,6 +6,8 @@ GAME REMOTE and GLobal SOCKETS
 4) Mb I can stop game when one user disconnects and inform other user
 
 
+hardcodede url need to be fixed in 42 API
+
 Global socket should change to offline if user disconnects without logout (now working need to test with others)
 
 Modules: 7
