@@ -335,26 +335,26 @@ class GameConsumer(AsyncWebsocketConsumer):
         print(f"[DEBUG] Disconnect count for {self.room_name}: {disconnect_count}")
         print(f"[DEBUG] Cached value for {self.cache_key}: {cache.get(self.cache_key)}")
 
-        if not cache.get(self.cache_key):
-            if self.players['left'].score == 0 and self.players['right'].score == 0:
-                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
-            else:
-                # Proceed to save the game history
-                cache.set(self.cache_key, True, None)
-                print(f"[DEBUG] Setting cache key {self.cache_key}")
+        print(f"Disconect: {disconnect_count}")
+        game_completed_key = f"{self.cache_key}_game_completed"
 
-                winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
-                winner = await database_sync_to_async(User.objects.get)(username=winner_username)
-                print("HEREEEEEEEEEWWWW")
-                game_record = await database_sync_to_async(GameHistory.objects.create)(
-                    player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
-                    player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
-                    score_player1=self.players['left'].score,
-                    score_player2=self.players['right'].score,
-                    winner=winner
-                )
-                print(f"[DEBUG] Game record created with ID: {game_record.id}")
-                print("Game Record:", game_record)
+        if disconnect_count == 1 and not cache.get(game_completed_key):
+            remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
+            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_cancelled_message',
+                    'message': {
+                        'type': 'game_cancelled',
+                        'reason': f"Player {self.user} disconnected. The game will not be counted.",
+                        'go_home': True
+                    }
+                }
+            )
+            cache.set(self.cache_key, True, None)
+
+        await self.save_game_if_necessary()
 
         if disconnect_count >= 2:
             print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
@@ -374,6 +374,36 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+
+    async def save_game_if_necessary(self):
+        game_completed_key = f"{self.cache_key}_game_completed"
+        
+        if not cache.get(self.cache_key) and cache.get(game_completed_key):
+            if self.players['left'].score == 0 and self.players['right'].score == 0:
+                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
+            else:
+                # Proceed to save the game history
+                cache.set(self.cache_key, True, None)
+                print(f"[DEBUG] Setting cache key {self.cache_key}")
+
+                winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
+                winner = await database_sync_to_async(User.objects.get)(username=winner_username)
+
+                print(f"[DEBUG] Saving game history for {self.room_name}")
+                game_record = await database_sync_to_async(GameHistory.objects.create)(
+                    player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
+                    player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
+                    score_player1=self.players['left'].score,
+                    score_player2=self.players['right'].score,
+                    winner=winner
+                )
+                print(f"[DEBUG] Game record created with ID: {game_record.id}")
+                print("Game Record:", game_record)
+
+    async def game_cancelled_message(self, event):
+        print("HERE SENDING MESSAGE")
+        message = event['message']
+        await self.send(text_data=json.dumps(message))
 
     async def receive(self, text_data):
         # print(f"Received data from {self.user}: {text_data}")
@@ -396,7 +426,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             elif self.players['right'].score >= 5:
                 self.players['right'].winner = 1
                 await self.send_game_over(self.players['right'].username)
-
             await self.send(text_data=json.dumps({
                 'type': 'score_update',
                 'players': {
@@ -410,6 +439,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 }
             }))
+            if data['type'] == 'game_complete' and data['game_status'] == 'completed':
+                await self.mark_game_complete()
         else:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -418,6 +449,16 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'message': data
                 }
             )
+
+    async def mark_game_complete(self):
+        game_completed_key = f"{self.cache_key}_game_completed"
+        
+        # Set the flag in the cache that the game was completed
+        cache.set(game_completed_key, True, None)
+        print(f"[DEBUG] Game marked as completed for {self.room_name}")
+        
+        # Now you can proceed to save the game if necessary
+        await self.save_game_if_necessary()
 
     async def game_message(self, event):
         message = event['message']
@@ -470,6 +511,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             }
         )
+        await self.mark_game_complete()
 
     async def game_over_message(self, event):
         message = event['message']

@@ -29,6 +29,8 @@ from django.db import models
 from .consumers import update_status_and_notify_friends, sanitize_group_name
 from rest_framework_simplejwt.tokens import RefreshToken
 import requests
+from django.core.exceptions import ValidationError
+from django.utils.http import urlencode
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -539,57 +541,84 @@ class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
         if not code:
-            return redirect('/#login?error=Authorization+Failed')
+            return redirect(f"/#login?error='Authorization Failed'")
 
-        # Exchange code for an access token
-        token_url = settings.FORTYTWO_URL_TOKEN
-        token_data = {
-            'grant_type': 'authorization_code',
-            'client_id': settings.FORTYTWO_CLIENT_ID,
-            'client_secret': settings.FORTYTWO_CLIENT_SECRET,
-            'code': code,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
-        }
+        try:
+            token_url = settings.FORTYTWO_URL_TOKEN
+            token_data = {
+                'grant_type': 'authorization_code',
+                'client_id': settings.FORTYTWO_CLIENT_ID,
+                'client_secret': settings.FORTYTWO_CLIENT_SECRET,
+                'code': code,
+                'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            }
+            
+            token_response = requests.post(token_url, data=token_data)
+            if token_response.status_code != 200:
+                return redirect(f"/#login?error='Token Exchange Failed'")
+            
+            token_info = token_response.json()
+            access_token = token_info.get('access_token')
+            if not access_token:
+                return redirect(f"/#login?error='Invalid Token'")
+
+            user_info_url = settings.FORTYTWO_URL_INFO
+            headers = {'Authorization': f'Bearer {access_token}'}
+            user_response = requests.get(user_info_url, headers=headers)
+
+            if user_response.status_code != 200:
+                return redirect(f"/#login?error='Failed to Fetch User Info'")
+
+            user_data = user_response.json()
+
+            username = self.sanitize_username(user_data.get('login'))
+            email = self.sanitize_email(user_data.get('email'))
+            request.session['access_token'] = access_token
+
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                pass
+            else:
+                original_username = username
+                count = 1
+
+                while User.objects.filter(username__iexact=username).exists():
+                    username = f"{original_username}_{count}"
+                    count += 1
+
+                user = User.objects.create_user(username=username, email=email)
+                UserProfile.objects.create(user=user)
+
+            auth_login(request, user)
+
+        except requests.RequestException:
+            return redirect(f"/#login?error='message': 'Internal Error'")
         
-        token_response = requests.post(token_url, data=token_data)
-        if token_response.status_code != 200:
-            return redirect('/#login?error=Token+Exchange+Failed')
-        
-        token_info = token_response.json()
-        access_token = token_info.get('access_token')
-        
-        if not access_token:
-            return redirect('/#login?error=Invalid+Token')
-
-        # Fetch the user's information
-        user_info_url = settings.FORTYTWO_URL_INFO
-        headers = {'Authorization': f'Bearer {access_token}'}
-        user_response = requests.get(user_info_url, headers=headers)
-
-        if user_response.status_code != 200:
-            return redirect('/#login?error=Failed+to+Fetch+User+Info')
-        
-        user_data = user_response.json()
-
-        username = user_data.get('login')
-        email = user_data.get('email')
-
-        user = User.objects.filter(email=email).first()
-
-        if user:
-            print(f"User with email {email} exists, logging in with username: {user.username}")
-        else:
-            original_username = username
-            count = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{original_username}_{count}"
-                count += 1
-
-            user = User.objects.create_user(username=username, email=email)
-            UserProfile.objects.create(user=user)
-            print(f"New user created: {username}")
-
-        auth_login(request, user)
+        except ValidationError:
+            return redirect(f"/#login?error='Data Validation Failed'")
 
         return redirect('/#home')
 
+    def sanitize_username(self, username):
+        """
+        Sanitize and validate the username.
+        """
+        if not username:
+            raise ValidationError("Username is missing.")
+        
+        sanitized_username = re.sub(r'[^a-zA-Z0-9_]', '', username)
+        return sanitized_username.lower()
+
+    def sanitize_email(self, email):
+        """
+        Sanitize and validate the email address.
+        """
+        if not email:
+            raise ValidationError("Email is missing.")
+        
+        email = email.strip().lower()
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValidationError("Invalid email format.")
+        
+        return email

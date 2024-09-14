@@ -13,6 +13,7 @@ class Player {
 
 class GameApp {
 	constructor() {
+        console.log("HEHEHE");
         this.gameSocket = null;
         this.assignedSide = null;
 
@@ -45,7 +46,7 @@ class GameApp {
         this.ballGeometry = null;
         this.ballMaterial = null;
         this.ball = null;
-        this.ballVelocity = new THREE.Vector3(4, 0, 4);
+        this.ballVelocity = new THREE.Vector3(5, 0, 5);
         this.camera = null;
         this.renderer = null;
         this.ambientLight = null;
@@ -66,6 +67,11 @@ class GameApp {
 
         this.animationFrameId = null;
         this.gameRunning = true; 
+
+        this.collisionBuffer = 1;
+        this.minVelocity = 2;
+        this.lastCollisionTime = 0;
+
     }
 
 	GameSocket(friendUsername) {
@@ -100,6 +106,9 @@ class GameApp {
             } else if (data.type === 'game_over') {
                 console.log(`Game over. Winner: ${data.winner}`);
                 this.handleGameOver(data.winner);
+            } else if (data.type === 'game_cancelled'){
+                console.log("Here111111222222222:::", data.reason);
+                this.handleGameCancelled(data.reason);
             }
         };
 
@@ -111,6 +120,32 @@ class GameApp {
             console.error('WebSocket error:', e);
         };
     }
+
+    handleGameCancelled(reason)
+    {
+        this.gameRunning = false;
+        this.stopAnimation();
+        this.cleanUp(0);
+
+        const gameCon = document.getElementById('gameCon');
+        gameCon.innerHTML = `
+            <div class="winner-container">
+                <h1 class="winner-text">${reason}</h1>
+                <button id="homeButton" class="home-button">Go to Home</button>
+            </div>
+        `;
+
+        document.getElementById('homeButton').addEventListener('click', () => {
+            const gameCon = document.getElementById('gameCon');
+            while (gameCon.firstChild) {
+                gameCon.removeChild(gameCon.firstChild);
+            }
+            document.getElementById('gameCon').style.display = 'none';
+            document.getElementById('sideBar').style.display = 'flex';
+            document.getElementById('mainPageHome').style.display = 'flex';
+        });
+    }
+
 	handleOpponentMovement(data) {
         if (data.side !== this.assignedSide) {
             console.log(`Handling opponent movement for side: ${data.side}`);
@@ -161,7 +196,6 @@ class GameApp {
                 <button id="homeButton" class="home-button">Go to Home</button>
             </div>
         `;
-
         document.getElementById('homeButton').addEventListener('click', () => {
             const gameCon = document.getElementById('gameCon');
             while (gameCon.firstChild) {
@@ -367,6 +401,7 @@ class GameApp {
                 // console.log('Moving left racket down:', racket.position.z);
             }
         }
+        // this.sendBallState();
     }
 
     moveBall()
@@ -381,50 +416,69 @@ class GameApp {
     }
 
     checkCollision() {
+        const now = Date.now();
+
+        // Skip collision check if the last collision was too recent (collision cooldown)
+        if (now - this.lastCollisionTime < this.collisionCooldown) {
+            return;
+        }
+
+        // Ball hits the lower wall
         if (this.ball.position.z - this.ballRadius <= this.tableProp.minZ && this.ballVelocity.z < 0) {
-            // Ball hits the lower wall
             this.ballVelocity.z *= -1;
-        } else if (this.ball.position.z + this.ballRadius >= this.tableProp.maxZ && this.ballVelocity.z > 0) {
-            // Ball hits the upper wall
+        } 
+        // Ball hits the upper wall
+        else if (this.ball.position.z + this.ballRadius >= this.tableProp.maxZ && this.ballVelocity.z > 0) {
             this.ballVelocity.z *= -1;
         }
-
-        // When player scores
-        if (this.ball.position.x + this.ballRadius >= this.tableProp.maxX && this.ballVelocity.x > 0) {
-            // right
-            // player1.increaseScore();
-            // updateScoreOnDis();
-            this.resetBall('left');
-        } else if (this.ball.position.x - this.ballRadius <= this.tableProp.minX && this.ballVelocity.x < 0) {
-            // left
-            // player2.increaseScore();
-            // updateScoreOnDis();
-            this.resetBall('right');
-        }
-
+        
         // Check collision with left racket
         if (
-            this.ball.position.x - this.ballRadius <= this.racket.position.x + this.racketW / 2 &&
-            this.ball.position.x + this.ballRadius >= this.racket.position.x - this.racketW / 2 &&
-            this.ball.position.y - this.ballRadius <= this.racket.position.y + this.racketH / 2 &&
-            this.ball.position.y + this.ballRadius >= this.racket.position.y - this.racketH / 2 &&
-            this.ball.position.z + this.ballRadius >= this.racket.position.z - this.racketD / 2 &&
-            this.ball.position.z - this.ballRadius <= this.racket.position.z + this.racketD / 2
+            this.ball.position.x - this.ballRadius <= this.racket.position.x + this.racketW / 2 + this.collisionBuffer &&
+            this.ball.position.x + this.ballRadius >= this.racket.position.x - this.racketW / 2 - this.collisionBuffer &&
+            this.ball.position.y - this.ballRadius <= this.racket.position.y + this.racketH / 2 + this.collisionBuffer &&
+            this.ball.position.y + this.ballRadius >= this.racket.position.y - this.racketH / 2 - this.collisionBuffer &&
+            this.ball.position.z + this.ballRadius >= this.racket.position.z - this.racketD / 2 - this.collisionBuffer &&
+            this.ball.position.z - this.ballRadius <= this.racket.position.z + this.racketD / 2 + this.collisionBuffer
         ) {
+            // Avoid very small velocities that might cause jitter
+            if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
+                this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
+            }
             this.ballVelocity.x *= -1;
+            this.lastCollisionTime = now; // Update last collision time
         }
 
         // Check collision with right racket
         if (
-            this.ball.position.x - this.ballRadius <= this.rRacket.position.x + this.racketW / 2 &&
-            this.ball.position.x + this.ballRadius >= this.rRacket.position.x - this.racketW / 2 &&
-            this.ball.position.y - this.ballRadius <= this.rRacket.position.y + this.racketH / 2 &&
-            this.ball.position.y + this.ballRadius >= this.rRacket.position.y - this.racketH / 2 &&
-            this.ball.position.z + this.ballRadius >= this.rRacket.position.z - this.racketD / 2 &&
-            this.ball.position.z - this.ballRadius <= this.rRacket.position.z + this.racketD / 2
+            this.ball.position.x - this.ballRadius <= this.rRacket.position.x + this.racketW / 2 + this.collisionBuffer &&
+            this.ball.position.x + this.ballRadius >= this.rRacket.position.x - this.racketW / 2 - this.collisionBuffer &&
+            this.ball.position.y - this.ballRadius <= this.rRacket.position.y + this.racketH / 2 + this.collisionBuffer &&
+            this.ball.position.y + this.ballRadius >= this.rRacket.position.y - this.racketH / 2 - this.collisionBuffer &&
+            this.ball.position.z + this.ballRadius >= this.rRacket.position.z - this.racketD / 2 - this.collisionBuffer &&
+            this.ball.position.z - this.ballRadius <= this.rRacket.position.z + this.racketD / 2 + this.collisionBuffer
         ) {
+            // Avoid very small velocities that might cause jitter
+            if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
+                this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
+            }
             this.ballVelocity.x *= -1;
+            this.lastCollisionTime = now; // Update last collision time
         }
+
+        // Ball goes beyond the right side (player 1 scores)
+        if (this.ball.position.x + this.ballRadius + 10 > this.tableProp.maxX + 5 && this.ballVelocity.x > 0) {
+            console.log("MaxX : ", this.tableProp.maxX)
+            console.log("RRRRRRRR: ", this.ball.position.x + this.ballRadius + 10)
+            this.resetBall('left');
+        } 
+        // Ball goes beyond the left side (player 2 scores)
+        else if (this.ball.position.x - this.ballRadius - 10 < this.tableProp.minX - 5 && this.ballVelocity.x < 0) {
+            console.log("MINX : ", this.tableProp.minX)
+            console.log("LLLLL : ", this.ball.position.x - this.ballRadius - 10)
+            this.resetBall('right');
+        }
+
     }
     
     resetBall(sideToInc) {
@@ -440,7 +494,7 @@ class GameApp {
     }
 
     // Method to reset or clean up variables
-    cleanUp() {
+    cleanUp(fullyEnded) {
         document.removeEventListener('keydown', this.onKeyDown.bind(this));
         document.removeEventListener('keyup', this.onKeyUp.bind(this));
         if (this.table) {
@@ -517,6 +571,8 @@ class GameApp {
             right: { up: false, down: false }
         };
         this.players = {};
+        if (fullyEnded === 1)
+            this.notifyGameComplete();
         this.gameSocket.close();
         this.gameSocket = null;
         this.assignedSide = null;
@@ -526,10 +582,25 @@ class GameApp {
         }
     }
 
+    notifyGameComplete() {
+        if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
+            try {
+                this.gameSocket.send(JSON.stringify({
+                    type: 'game_complete',
+                    game_status: 'completed'
+                }));
+            } catch (error) {
+                console.error("Failed to send game complete message:", error);
+            }
+        } else {
+            console.warn("WebSocket is not open. Cannot send game complete message.");
+        }
+    }
+
     handleGameOver(winner) {
         this.gameRunning = false;
         this.stopAnimation();
-        this.cleanUp();
+        this.cleanUp(1);
 
         // Display the winner
         this.displayWinner(winner);
@@ -547,7 +618,7 @@ class GameApp {
         this.moveBall();
 
         const now = Date.now();
-        if (now - this.lastBallUpdateTime > 500) {  // Adjust the interval as needed
+        if (now - this.lastBallUpdateTime > 1500) {  // Adjust the interval as needed
             this.sendBallState();
             this.lastBallUpdateTime = now;
         }
