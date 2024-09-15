@@ -25,9 +25,10 @@ services:
   django:
     build: .
     container_name: django
-    command: sh -c "python manage.py migrate && python manage.py makemigrations && python manage.py create_superuser && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py makemigrations && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/usr/src/app
+      - static_volume:/usr/src/app/spa_app/static/
     env_file:
       - .env
     depends_on:
@@ -51,25 +52,25 @@ services:
 
   nginx:
     image: nginx:latest
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - static_volume:/usr/share/nginx/html/static
-      - certs:/etc/nginx/certs
+      - static_volume:/usr/share/nginx/html/static/
+      - certs:/certs
     depends_on:
       - django
       - mkcert
     networks:
       - backend
 
-
-
 volumes:
   postgres_data:
   certs:
-
+  static_volume:
 
 networks:
   backend:
+    driver: bridge
