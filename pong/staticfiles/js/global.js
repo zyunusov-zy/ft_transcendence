@@ -4,7 +4,7 @@ class GlobApp {
     }
 
     GlobSocket() {
-        this.globalSocket = new WebSocket(`ws://${window.location.host}/ws/global/`);
+        this.globalSocket = new WebSocket(`wss://${window.location.host}/wss/global/`);
 
         this.globalSocket.onopen = () => {
             console.log('Global WebSocket connection established');

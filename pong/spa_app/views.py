@@ -533,7 +533,7 @@ class OAuthConfigView(View):
         print(redirect_uri)
         return JsonResponse({
             'client_id': settings.FORTYTWO_CLIENT_ID,
-            'redirect_uri': redirect_uri,
+            'redirect_uri': settings.FORTYTWO_THING,
             'auth_url': settings.FORTYTWO_AUTH_URL
         })
 
@@ -556,7 +556,7 @@ class Auth42CallbackView(View):
             'client_id': settings.FORTYTWO_CLIENT_ID,
             'client_secret': settings.FORTYTWO_CLIENT_SECRET,
             'code': code,
-            'redirect_uri': redirect_uri,
+            'redirect_uri': settings.FORTYTWO_THING,
         }
         
         token_response = requests.post(token_url, data=token_data)

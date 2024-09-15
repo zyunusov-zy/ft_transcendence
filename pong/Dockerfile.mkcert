@@ -14,4 +14,4 @@ RUN curl -L https://dl.filippo.io/mkcert/latest?for=linux/amd64 -o /usr/local/bi
 RUN mkdir /certs
 
 # Generate certificates when the container runs
-CMD mkcert -install && mkcert -key-file /certs/key.pem -cert-file /certs/cert.pem localhost 127.0.0.1 ::1
+CMD mkcert -install && mkcert -key-file /certs/key.pem -cert-file /certs/cert.pem localhost 10.11.7.5  127.0.0.1 ::1
