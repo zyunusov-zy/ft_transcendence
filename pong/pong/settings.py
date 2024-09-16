@@ -47,7 +47,6 @@ REST_FRAMEWORK = {
 }
 
 
-
 ASGI_APPLICATION = 'pong.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -153,8 +152,10 @@ STATICFILES_DIRS = [
 
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://10.12.2.2',
+    os.environ.get('CSRF_TR_OR'),
 ]
+print("CSRF: ",os.environ.get('CSRF_TR_OR'))
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

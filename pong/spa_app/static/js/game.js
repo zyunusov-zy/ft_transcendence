@@ -69,7 +69,7 @@ class GameApp {
     }
 
 	GameSocket(friendUsername) {
-        const wsPath = `ws://${window.location.host}/ws/game/${friendUsername}/`;
+        const wsPath = `wss://${window.location.host}/wss/game/${friendUsername}/`;
 
         this.gameSocket = new WebSocket(wsPath);
 

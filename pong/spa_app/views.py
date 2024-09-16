@@ -531,6 +531,7 @@ class OAuthConfigView(View):
         # Dynamically construct the redirect URI
         redirect_uri = request.build_absolute_uri('/auth42/')
         print(redirect_uri)
+        print("REDIRECT: ", settings.FORTYTWO_THING)
         return JsonResponse({
             'client_id': settings.FORTYTWO_CLIENT_ID,
             'redirect_uri': settings.FORTYTWO_THING,

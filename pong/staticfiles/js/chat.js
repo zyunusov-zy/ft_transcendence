@@ -374,7 +374,7 @@ function sendMessage(friend) {
 
 
 function establishWebSocketConnection(friend) {
-    const socket = new WebSocket(`ws://${window.location.host}/ws/chat/${friend}/`);
+    const socket = new WebSocket(`wss://${window.location.host}/wss/chat/${friend}/`);
 
     socket.onopen = function(event) {
         console.log('WebSocket connection opened:', event);
