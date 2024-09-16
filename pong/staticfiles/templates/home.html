@@ -113,6 +113,10 @@
             <span class="close">&times;</span>
             <form id="editProfileForm">
                 <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" minlength="5" maxlength="20" id="username" name="username" class="form-control">
+                </div>
+                <div class="form-group">
                     <label for="avatar">Avatar</label>
                     <input type="file" id="avatar" name="avatar" class="form-control">
                 </div>
@@ -121,6 +125,7 @@
             <div id="error-message" class="text-danger mt-2"></div>
         </div>
     </div>
+    
 
     <div id="opponentFormContainer" style="display: none;">
         <div id="formBox">

@@ -39,6 +39,7 @@ from .views import (
     # Block
     UnblockUserView,
     BlockUserView,
+    CheckBlockStatusView,
 
     # 42OAuth
     OAuthConfigView,
@@ -76,4 +77,5 @@ urlpatterns = [
     path('unblock/<str:friend_username>/', UnblockUserView.as_view(), name='unblock_user'),
     path('api/oauth/config/', OAuthConfigView.as_view(), name='oauth_config'),
     path('auth42/', Auth42CallbackView.as_view(), name='auth42_callback'),
+    path('api/check-block-status/<str:username>/', CheckBlockStatusView.as_view(), name='check_block_status'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

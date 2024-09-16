@@ -4,12 +4,16 @@ function switchToChatBox() {
 
 let chatSockets = {};
 
-function openChatBox(friend, globApp) {
+async function openChatBox(friend, globApp) {
     let chatBox = document.getElementById(`chat-box-${friend}`);
     let background = document.getElementById('chatBoxBackground');
 
+
+    const blockStatus = await checkBlockStatus(friend);
+    
     if (!chatBox) {
-        chatBox = createChatBox(friend, globApp);
+        console.log("CREATING CHAT BOX: ", blockStatus);
+        chatBox = createChatBox(friend, globApp, blockStatus);
     }
 
     chatBox.classList.add('active');
@@ -30,7 +34,14 @@ function openChatBox(friend, globApp) {
     }
 }
 
-function createChatBox(friend, globApp) {
+async function checkBlockStatus(friend) {
+    const response = await fetch(`/api/check-block-status/${friend}/`);
+    const data = await response.json();
+    console.log("HEREEEEEE: ", data.hasBlocked);
+    return data.hasBlocked;
+}
+
+function createChatBox(friend, globApp, blockStatus = false) {
     const chatContainer = document.getElementById('chatsBox');
 
     const chatBox = document.createElement('div');
@@ -58,6 +69,12 @@ function createChatBox(friend, globApp) {
     input.className = 'message-input';
     inputContainer.appendChild(input);
 
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendMessage(friend);
+        }
+    });
+    
     const sendButton = document.createElement('button');
     sendButton.innerText = 'Send';
     sendButton.className = 'send-button';
@@ -74,10 +91,17 @@ function createChatBox(friend, globApp) {
     dropdownMenu.style.display = 'none';
 
     const blockOption = document.createElement('div');
-    blockOption.innerText = 'Block';
     blockOption.className = 'dropdown-option';
+
+    if (blockStatus) {
+        console.log()
+        blockOption.innerText = 'Unblock';
+    } else {
+        blockOption.innerText = 'Block';
+    }
+
     blockOption.addEventListener('click', () => {
-        blockUser(friend, blockOption)
+        blockUser(friend, blockOption);
     });
 
     const profileOption = document.createElement('div');

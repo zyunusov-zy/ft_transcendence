@@ -1,9 +1,10 @@
 setup docker with nginx with SSL/HTTPS and then change ws to wss channel connections
 
-GAME REMOTE and GLobal SOCKETS
-2) need to check remote game sometimes it is not synch
 
-Global socket should change to offline if user disconnects without logout (now working need to test with others)
+check if one of the users disconnects game is not stoping
+
+Implement pause in local game
+
 
 
 

@@ -231,14 +231,26 @@ class EditProfileView(View):
     def post(self, request, *args, **kwargs):
         user = request.user
         avatar = request.FILES.get('avatar')
+        username = request.POST.get('username')
 
-        if not avatar:
-            return JsonResponse({'success': False, 'error': 'Avatar must be provided.'})
+        if not username:
+            return JsonResponse({'success': False, 'error': 'Username must be provided.'})
+
+        if User.objects.filter(username=username).exclude(id=user.id).exists():
+            return JsonResponse({'success': False, 'error': 'Username is already taken.'})
 
         try:
             user_profile = user.userprofile
-            if avatar is not None:
+
+            # Update username
+            if username and username != user.username:
+                user.username = username
+                user.save()
+
+            # Update avatar if provided
+            if avatar:
                 user_profile.profile_picture = avatar
+
             user_profile.save()
 
             return JsonResponse({'success': True, 'message': 'Profile updated successfully.'})
@@ -360,7 +372,6 @@ class UpdateStatusView(View):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
     def get(self, request, username):
         print("HERE!!!!!!!!!!")
@@ -386,6 +397,19 @@ class MessagesListView(View):
             })
 
         return JsonResponse(message_list, safe=False)
+
+@method_decorator(login_required, name='dispatch')
+class CheckBlockStatusView(View):
+    def get(self, request, username):
+        current_user = request.user
+        other_user = get_object_or_404(User, username=username)
+
+        has_blocked = Block.objects.filter(blocker=current_user, blocked=other_user).exists()
+        print(f" IS IT BLOCKED: {has_blocked}")
+        return JsonResponse({
+            'hasBlocked': has_blocked,
+        })
+
 
 @method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')

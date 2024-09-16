@@ -324,23 +324,29 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         print(f"[DEBUG] Disconnect method called for user: {self.user}")
-        print(f"[DEBUG] Print {cache.get(self.cache_key)}")
-
-         # Retrieve the current disconnect counter from the cache
+        
+        # Ensure the cache key is consistent and checked reliably
         disconnect_count_key = f"{self.cache_key}_disconnect_count"
+        
+        # Retrieve and update the disconnect count
         disconnect_count = cache.get(disconnect_count_key) or 0
         disconnect_count += 1
         cache.set(disconnect_count_key, disconnect_count, None)
-
+        
         print(f"[DEBUG] Disconnect count for {self.room_name}: {disconnect_count}")
         print(f"[DEBUG] Cached value for {self.cache_key}: {cache.get(self.cache_key)}")
 
-        print(f"Disconect: {disconnect_count}")
+        # Check the completion status of the game
         game_completed_key = f"{self.cache_key}_game_completed"
+        game_completed = cache.get(game_completed_key)
+        print(f"[DEBUG] Game completion status: {game_completed}")
 
-        if disconnect_count == 1 and not cache.get(game_completed_key):
+        # Handle game cancellation for the first disconnect if the game is not completed
+        if disconnect_count == 1 and not game_completed:
             remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
             print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
+            
+            # Send game cancellation message
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -358,10 +364,10 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         if disconnect_count >= 2:
             print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
-        
-            # Reset the game cache and disconnect counter
             cache.delete(self.cache_key)
             cache.delete(disconnect_count_key)
+
+        # Update user status and clean up
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
@@ -378,7 +384,13 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def save_game_if_necessary(self):
         game_completed_key = f"{self.cache_key}_game_completed"
         
-        if not cache.get(self.cache_key) and cache.get(game_completed_key):
+        # Ensure the cache state is checked consistently
+        is_game_saved = cache.get(self.cache_key)
+        is_game_completed = cache.get(game_completed_key)
+        
+        print(f"[DEBUG] Checking if game save is necessary. Game saved: {is_game_saved}, Game completed: {is_game_completed}")
+        
+        if not is_game_saved and is_game_completed:
             if self.players['left'].score == 0 and self.players['right'].score == 0:
                 print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
             else:
@@ -461,9 +473,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.save_game_if_necessary()
 
     async def game_message(self, event):
-        message = event['message']
-        # print(f"Received message to send to {self.user}: {message}")
-        await self.send(text_data=json.dumps(message))
+        try:
+            message = event['message']
+            await self.send(text_data=json.dumps(message))
+        except Disconnected:
+            print(f"WebSocket is already disconnected, cannot send message.{event}")
 
         if message['type'] == 'ball_state':
             # print(f"Broadcasting ball state: Position - {message['position']}, Velocity - {message['velocity']}")

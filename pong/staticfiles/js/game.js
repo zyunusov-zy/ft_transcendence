@@ -71,6 +71,9 @@ class GameApp {
         this.collisionBuffer = 1;
         this.minVelocity = 2;
         this.lastCollisionTime = 0;
+        this.edgeTolerance = 10;
+        this.collisionCooldown = 100;
+        this.cornerTolerance = 5;
 
     }
 
@@ -436,49 +439,74 @@ class GameApp {
         if (
             this.ball.position.x - this.ballRadius <= this.racket.position.x + this.racketW / 2 + this.collisionBuffer &&
             this.ball.position.x + this.ballRadius >= this.racket.position.x - this.racketW / 2 - this.collisionBuffer &&
-            this.ball.position.y - this.ballRadius <= this.racket.position.y + this.racketH / 2 + this.collisionBuffer &&
-            this.ball.position.y + this.ballRadius >= this.racket.position.y - this.racketH / 2 - this.collisionBuffer &&
             this.ball.position.z + this.ballRadius >= this.racket.position.z - this.racketD / 2 - this.collisionBuffer &&
             this.ball.position.z - this.ballRadius <= this.racket.position.z + this.racketD / 2 + this.collisionBuffer
         ) {
-            // Avoid very small velocities that might cause jitter
+            // Check if the ball is near the edge (corners) of the paddle in the Z direction
+            const distanceFromCenterZ = Math.abs(this.ball.position.z - this.racket.position.z);
+            const isNearEdgeZ = distanceFromCenterZ >= (this.racketD / 2) - this.edgeTolerance;
+        
+            // Apply different handling if the ball hit near the edge
+            if (isNearEdgeZ) {
+                // Slightly adjust the Z velocity for smoother bounce near the paddle's edge
+                this.ballVelocity.z += (Math.random() - 0.5) * 0.4;  // Introduce random Z variation to simulate spin
+            }
+        
+            // Prevent jitter with very small velocities in X direction
             if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
                 this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
             }
+        
+            // Invert ball velocity on the X-axis (bounce back)
             this.ballVelocity.x *= -1;
-            this.lastCollisionTime = now; // Update last collision time
+        
+            // Move the ball slightly to avoid multiple collisions at the same spot
+            this.ball.position.x += this.ballVelocity.x > 0 ? this.collisionBuffer : -this.collisionBuffer;
+        
+            // Update last collision time to debounce
+            this.lastCollisionTime = now;
         }
-
-        // Check collision with right racket
+        
+        // Check collision with the right racket (paddle) using the same logic
         if (
             this.ball.position.x - this.ballRadius <= this.rRacket.position.x + this.racketW / 2 + this.collisionBuffer &&
             this.ball.position.x + this.ballRadius >= this.rRacket.position.x - this.racketW / 2 - this.collisionBuffer &&
-            this.ball.position.y - this.ballRadius <= this.rRacket.position.y + this.racketH / 2 + this.collisionBuffer &&
-            this.ball.position.y + this.ballRadius >= this.rRacket.position.y - this.racketH / 2 - this.collisionBuffer &&
             this.ball.position.z + this.ballRadius >= this.rRacket.position.z - this.racketD / 2 - this.collisionBuffer &&
             this.ball.position.z - this.ballRadius <= this.rRacket.position.z + this.racketD / 2 + this.collisionBuffer
         ) {
-            // Avoid very small velocities that might cause jitter
+            // Check if the ball is near the edge (corners) of the paddle in the Z direction
+            const distanceFromCenterZ = Math.abs(this.ball.position.z - this.rRacket.position.z);
+            const isNearEdgeZ = distanceFromCenterZ >= (this.racketD / 2) - this.edgeTolerance;
+        
+            // Apply different handling if the ball hit near the edge
+            if (isNearEdgeZ) {
+                // Slightly adjust the Z velocity for smoother bounce near the paddle's edge
+                this.ballVelocity.z += (Math.random() - 0.5) * 0.4;
+            }
+        
+            // Prevent jitter with very small velocities in X direction
             if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
                 this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
             }
+        
+            // Invert ball velocity on the X-axis (bounce back)
             this.ballVelocity.x *= -1;
-            this.lastCollisionTime = now; // Update last collision time
+        
+            // Move the ball slightly to avoid multiple collisions at the same spot
+            this.ball.position.x += this.ballVelocity.x > 0 ? this.collisionBuffer : -this.collisionBuffer;
+        
+            // Update last collision time to debounce
+            this.lastCollisionTime = now;
         }
-
+    
         // Ball goes beyond the right side (player 1 scores)
         if (this.ball.position.x + this.ballRadius + 10 > this.tableProp.maxX + 5 && this.ballVelocity.x > 0) {
-            console.log("MaxX : ", this.tableProp.maxX)
-            console.log("RRRRRRRR: ", this.ball.position.x + this.ballRadius + 10)
             this.resetBall('left');
-        } 
+        }
         // Ball goes beyond the left side (player 2 scores)
         else if (this.ball.position.x - this.ballRadius - 10 < this.tableProp.minX - 5 && this.ballVelocity.x < 0) {
-            console.log("MINX : ", this.tableProp.minX)
-            console.log("LLLLL : ", this.ball.position.x - this.ballRadius - 10)
             this.resetBall('right');
         }
-
     }
     
     resetBall(sideToInc) {
@@ -572,7 +600,10 @@ class GameApp {
         };
         this.players = {};
         if (fullyEnded === 1)
+        {
+            console.log("HWWWWWWWWWWWWWWWWWWWWW");
             this.notifyGameComplete();
+        }
         this.gameSocket.close();
         this.gameSocket = null;
         this.assignedSide = null;
@@ -618,7 +649,7 @@ class GameApp {
         this.moveBall();
 
         const now = Date.now();
-        if (now - this.lastBallUpdateTime > 1500) {  // Adjust the interval as needed
+        if (now - this.lastBallUpdateTime > 2000) {  // Adjust the interval as needed
             this.sendBallState();
             this.lastBallUpdateTime = now;
         }
