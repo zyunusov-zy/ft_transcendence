@@ -19,7 +19,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', "localhost"]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
@@ -45,7 +45,6 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
-
 
 
 ASGI_APPLICATION = 'pong.asgi.application'
@@ -152,6 +151,12 @@ STATICFILES_DIRS = [
 ]
 
 
+CSRF_TRUSTED_ORIGINS = [
+    os.environ.get('CSRF_TR_OR'),
+]
+print("CSRF: ",os.environ.get('CSRF_TR_OR'))
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -170,7 +175,8 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 FORTYTWO_AUTH_URL= os.environ.get('FORTYTWO_AUTH_URL')
 FORTYTWO_CLIENT_ID = os.environ.get('FORTYTWO_CLIENT_ID')
-FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
+# FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
 FORTYTWO_CLIENT_SECRET = os.environ.get('FORTYTWO_CLIENT_SECRET')
 FORTYTWO_URL_INFO = os.environ.get('FORTYTWO_URL_INFO')
 FORTYTWO_URL_TOKEN = os.environ.get('FORTYTWO_URL_TOKEN')
+FORTYTWO_THING= os.environ.get('FORTYTWO_THING')

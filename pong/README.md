@@ -12,3 +12,5 @@ psql -U zy -d pong42 -h localhost -p 5432
 
 Sometimes, browsers cache resources like HTML files, CSS, and JavaScript. 
 Try clearing your browser cache and reloading the page (Ctrl + F5 or Cmd + Shift + R).
+
+

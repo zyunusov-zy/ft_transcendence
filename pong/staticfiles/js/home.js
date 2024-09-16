@@ -198,6 +198,8 @@ function initializeHome() {
         });
     }
     async function handleAcceptRequest(requestId) {
+		const str = getCookie('csrftoken');
+		console.log(str);
         const response = await fetch(`/accept-friend-request/${requestId}/`, {
             method: 'POST',
             headers: {

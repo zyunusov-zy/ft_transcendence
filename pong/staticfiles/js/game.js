@@ -78,7 +78,7 @@ class GameApp {
     }
 
 	GameSocket(friendUsername) {
-        const wsPath = `ws://${window.location.host}/ws/game/${friendUsername}/`;
+        const wsPath = `wss://${window.location.host}/wss/game/${friendUsername}/`;
 
         this.gameSocket = new WebSocket(wsPath);
 
@@ -649,7 +649,7 @@ class GameApp {
         this.moveBall();
 
         const now = Date.now();
-        if (now - this.lastBallUpdateTime > 2000) {  // Adjust the interval as needed
+        if (now - this.lastBallUpdateTime > 2500) {  // Adjust the interval as needed
             this.sendBallState();
             this.lastBallUpdateTime = now;
         }
