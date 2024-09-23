@@ -1,25 +1,32 @@
-setup docker with nginx with SSL/HTTPS and then change ws to wss channel connections
-
-
 check if one of the users disconnects game is not stoping
-
-Implement pause in local game
-
-
+check game again
+Implement pause in local game ( IMPLEMENTED NEED TO CHECK WELL)
 
 
+remote game fix
+ 
 
-Modules: 7
+
+minX = -600 + 30 = -570
+maxX = 600 - 30 = 570
+
+571 > 570
+
+
+
+Modules: 7.5
 
 • Major module: Use a Framework as backend.
 • Minor module: Use a front-end framework or toolkit.
 • Minor module: Use a database for the backend -and more
 • Major module: Standard user management, authentication, users across tournaments.
+• Major module: Implementing a remote authentication.
+42 API: (working creating id if user exist in the db)
 • Major module: Remote players
 • Major module: Live Chat
 • Major module: Implementing Advanced 3D Techniques
-• Major module: Implementing a remote authentication.
-42 API: (working creating id if user exist in the db)
+
+Minor module: Expanding Browser Compatibility.
 
 
 
@@ -54,3 +61,14 @@ an API.
 
 • Major module: Implementing a remote authentication.(on freeze cant get key to access)
 42 API:
+
+
+
+If you've already implemented SSL (which means you're using HTTPS), 
+you're actually already using TLS. SSL is the predecessor to TLS,
+and in modern applications, TLS has replaced SSL,
+but people often still refer to it as 
+"SSL" even though they're using TLS.
+
+
+Django uses SHA256 as the hash function PBKDF2

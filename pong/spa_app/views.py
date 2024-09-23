@@ -31,6 +31,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import requests
 from django.core.exceptions import ValidationError
 from django.utils.http import urlencode
+from django.utils.html import escape
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -49,6 +50,9 @@ class LoginView(View):
     def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
+
+        if not username or not password:
+            return JsonResponse({'success': False, 'errors': 'Username and password are required.'})
 
         user = authenticate(request, username=username, password=password)
 
@@ -76,13 +80,21 @@ class LoginView(View):
 @method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
     def post(self, request):
-        username = request.POST.get('usernamesignup')
-        email = request.POST.get('emailsignup')
-        password = request.POST.get('passwordsignup')
+        username = escape(request.POST.get('usernamesignup', '').strip())
+        email = escape(request.POST.get('emailsignup', '').strip())
+        password = escape(request.POST.get('passwordsignup', '').strip())
 
-        # Password policy
+        if not username or not email or not password:
+            return JsonResponse({'success': False, 'errors': 'All fields are required.'})
+
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return JsonResponse({'success': False, 'errors': 'Invalid email format.'})
+
+        if len(password) < 8:
+            return JsonResponse({'success': False, 'errors': 'Password must be at least 8 characters long.'})
         if not re.findall('[A-Z]', password) or not re.findall('[0-9]', password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', password):
-            return JsonResponse({'success': False, 'errors': 'Password must contain at least one uppercase letter, one digit, one symbol.'})
+            return JsonResponse({'success': False, 'errors': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
 
         if User.objects.filter(username=username).exists():
             return JsonResponse({'success': False, 'errors': 'Username already exists. Please choose a different one.'})
@@ -100,7 +112,7 @@ class SignupView(View):
             send_mail(
                 'Verify your email for our awesome site',
                 f'Please click the following link to verify your email address: {verification_link}',
-                'pon42',  # need to change
+                'pon42', 
                 [email],
                 fail_silently=False,
             )
@@ -150,22 +162,29 @@ class UserDataView(LoginRequiredMixin, View):
 @method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetView(View):
     def post(self, request, *args, **kwargs):
-        username = request.POST.get('username')
-        email = request.POST.get('email')
+        username = escape(request.POST.get('username', '').strip())
+        email = escape(request.POST.get('email', '').strip())
 
-        print(username)
-        print(email)
+        if not username or not email:
+            return JsonResponse({'success': False, 'error': 'Username and email are required.'})
+
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return JsonResponse({'success': False, 'error': 'Invalid email format.'})
+
         try:
             user = User.objects.get(username=username, email=email)
 
             if not user.userprofile.email_verified:
                 return JsonResponse({'success': False, 'error': 'Email not verified.'})
+
             token = get_random_string(length=32)
             
             user.userprofile.reset_token = token
             user.userprofile.save()
 
             reset_url = request.build_absolute_uri('/') + f'#setnewpass?token={token}'
+
             send_mail(
                 'Password Reset',
                 f'Click the link to reset your password: {reset_url}',
@@ -177,6 +196,40 @@ class PasswordResetView(View):
 
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid username or email.'})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SetNewPasswordView(View):
+    def post(self, request, *args, **kwargs):
+        token = escape(request.POST.get('token', '').strip())
+        new_password = escape(request.POST.get('new_password', '').strip())
+        confirm_password = escape(request.POST.get('confirm_password', '').strip())
+
+        if not token or not new_password or not confirm_password:
+            return JsonResponse({'success': False, 'error': 'Token, new password, and confirmation are required.'})
+
+        if new_password != confirm_password:
+            return JsonResponse({'success': False, 'error': 'Passwords do not match.'})
+
+        if len(new_password) < 8:
+            return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters long.'})
+        if not re.findall('[A-Z]', new_password) or not re.findall('[0-9]', new_password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', new_password):
+            return JsonResponse({'success': False, 'error': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
+
+        try:
+            profile = UserProfile.objects.get(reset_token=token)
+            user = profile.user
+
+            user.password = make_password(new_password)
+            user.save()
+
+            profile.reset_token = ''
+            profile.save()
+
+            return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
+        
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid token.'})
 
 class ValidateTokenView(View):
     def get(self, request, *args, **kwargs):
@@ -191,63 +244,25 @@ class ValidateTokenView(View):
         except UserProfile.DoesNotExist:
             return JsonResponse({'valid': False, 'error': 'Invalid token'})
 
-
-@method_decorator(csrf_exempt, name='dispatch')
-class SetNewPasswordView(View):
-    def post(self, request, *args, **kwargs):
-        token = request.POST.get('token')
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-
-        if not token or not new_password or not confirm_password:
-            return JsonResponse({'success': False, 'error': 'Token, new password, and confirmation are required.'})
-
-        if new_password != confirm_password:
-            return JsonResponse({'success': False, 'error': 'Passwords do not match.'})
-
-        if len(new_password) < 8:
-            return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters long.'})
-        
-        if not re.findall('[A-Z]', new_password) or not re.findall('[0-9]', new_password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', new_password):
-            return JsonResponse({'success': False, 'error': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
-        
-        try:
-            profile = UserProfile.objects.get(reset_token=token)
-            user = profile.user
-            user.password = make_password(new_password)
-            user.save()
-
-            profile.reset_token = ''
-            profile.save()
-
-            return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
-        
-        except UserProfile.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Invalid token.'})
-
 @method_decorator(login_required, name='dispatch')
 @method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(View):
     def post(self, request, *args, **kwargs):
         user = request.user
         avatar = request.FILES.get('avatar')
-        username = request.POST.get('username')
+        username = request.POST.get('username', '').strip()
 
-        if not username:
-            return JsonResponse({'success': False, 'error': 'Username must be provided.'})
+        if username:
+            if User.objects.filter(username=username).exclude(id=user.id).exists():
+                return JsonResponse({'success': False, 'error': 'Username is already taken.'})
 
-        if User.objects.filter(username=username).exclude(id=user.id).exists():
-            return JsonResponse({'success': False, 'error': 'Username is already taken.'})
+            if username != user.username:
+                user.username = username
+                user.save()
 
         try:
             user_profile = user.userprofile
 
-            # Update username
-            if username and username != user.username:
-                user.username = username
-                user.save()
-
-            # Update avatar if provided
             if avatar:
                 user_profile.profile_picture = avatar
 

@@ -43,6 +43,8 @@ def sanitize_group_name(name):
     return sanitized_name[:100]
 
 class GlobalConsumer(AsyncWebsocketConsumer):
+    is_game_in_progress = False
+
     async def connect(self):
         self.user = self.scope['user']
 
@@ -82,6 +84,7 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         else:
             print("Group name or channel name not found during disconnection.")
 
+
     async def receive(self, text_data):
         data = json.loads(text_data)
         receiver_username = data.get('receiver_username')
@@ -92,6 +95,16 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         print(f"GlobalConsumer: Received data: {data}")
 
         if receiver_username and game_request:
+            if GlobalConsumer.is_game_in_progress:
+                await self.send(text_data=json.dumps({
+                    'type': 'game_in_progress',
+                    'message': 'Another game request is already in progress. Please wait.'
+                }))
+                print(f"GlobalConsumer: A game is already in progress. Request from user {sender_id} rejected.")
+                return
+
+            GlobalConsumer.is_game_in_progress = True
+
             try:
                 receiver = await sync_to_async(User.objects.get)(username=receiver_username)
                 receiver_profile = await sync_to_async(UserProfile.objects.get)(user=receiver)
@@ -110,7 +123,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     }))
                     print(f"GlobalConsumer: User {receiver_username} is offline. Request rejected.")
                 else:
-                    # Sanitize the recipient's group name and send the game request
                     receiver_id = receiver.id
                     recipient_channel_name = sanitize_group_name(f"user_{receiver_id}")
                     
@@ -129,7 +141,9 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     print(f"GlobalConsumer: Game request sent to channel {recipient_channel_name}.")
             except User.DoesNotExist:
                 print(f"GlobalConsumer: User with username {receiver_username} does not exist.")
+                GlobalConsumer.is_game_in_progress = False
         elif response:
+            # Handle game response
             original_sender_id = data.get('receiver_id')
             sender_channel_name = sanitize_group_name(f"user_{original_sender_id}")
             
@@ -143,8 +157,10 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     'responder_username': self.user.username,
                 }
             )
+
+            GlobalConsumer.is_game_in_progress = False
             
-            print(f"GlobalConsumer: Game response sent to channel {sender_channel_name}.")
+            print(f"GlobalConsumer: Game response sent to channel {sender_channel_name}. Game status reset.")
 
     async def game_request(self, event):
         game_request = event['game_request']
@@ -184,6 +200,8 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         print("Updating status")
         print(event['username'])
         print(event['status'])
+        if event['status'] == 'available':
+            GlobalConsumer.is_game_in_progress = False
         await self.send(text_data=json.dumps({
             'type': 'friend_status_update',
             'username': event['username'],
