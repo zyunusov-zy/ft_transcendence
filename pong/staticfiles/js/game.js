@@ -66,7 +66,7 @@ class GameApp {
         };
 
         this.animationFrameId = null;
-        this.gameRunning = true; 
+        this.gameRunning = false; 
 
         this.collisionBuffer = 1;
         this.minVelocity = 2;
@@ -74,7 +74,7 @@ class GameApp {
         this.edgeTolerance = 10;
         this.collisionCooldown = 100;
         this.cornerTolerance = 5;
-
+        this.gameBuild =false;
     }
 
 	GameSocket(friendUsername) {
@@ -112,6 +112,14 @@ class GameApp {
             } else if (data.type === 'game_cancelled'){
                 console.log("Here111111222222222:::", data.reason);
                 this.handleGameCancelled(data.reason);
+            }else if (data.type === 'game_start') {
+                console.log("GOT GAME START: ", data);
+                this.startAnimation(); 
+            }else if (data.type === 'request_ready') {
+                console.log("Player ready?????")
+                this.gameSocket.send(JSON.stringify({
+                    type: 'player_ready'
+                }));
             }
         };
 
@@ -122,6 +130,12 @@ class GameApp {
         this.gameSocket.onerror = (e) => {
             console.error('WebSocket error:', e);
         };
+    }
+
+    startAnimation() {
+        console.log("GAME STARTED");
+        this.gameRunning = true;  // Set the flag to indicate the game is running
+        this.animate();  // Start the animation loop
     }
 
     handleGameCancelled(reason)
@@ -161,8 +175,10 @@ class GameApp {
     }
 
     handleBallState(data) {
-        this.ball.position.set(data.position.x, data.position.y, data.position.z);
-        this.ballVelocity.set(data.velocity.x, data.velocity.y, data.velocity.z);
+        // Correct the access to ball_position
+        this.ball.position.set(data.ball_position[0], data.ball_position[1], data.ball_position[2]);
+        // Correct the access to velocity
+        this.ballVelocity.set(data.velocity[0], data.velocity[1], data.velocity[2]);
     }
 
     updateScoreboard() {
@@ -177,18 +193,6 @@ class GameApp {
         player2Score.textContent = this.players.right.score;
 
         console.log(`Scoreboard updated: Player 1 (${this.players.left.username}) - ${this.players.left.score}, Player 2 (${this.players.right.username}) - ${this.players.right.score}`);
-    }
-
-    sendScoreUpdate(sideToInc) {
-        if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
-            this.gameSocket.send(JSON.stringify({
-                type: 'score_update',
-                player: sideToInc
-            }));
-            console.log(`Sent score update for side: ${sideToInc}`);
-        } else {
-            console.error('Game WebSocket is not open. Cannot send score update.');
-        }
     }
 
     displayWinner(winner) {
@@ -222,31 +226,43 @@ class GameApp {
         }
     }
 
-    sendBallState() {
-        if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
-            const ballState = {
-                type: 'ball_state',
-                position: { x: this.ball.position.x, y: this.ball.position.y, z: this.ball.position.z },
-                velocity: { x: this.ballVelocity.x, y: this.ballVelocity.y, z: this.ballVelocity.z },
-            };
-            this.gameSocket.send(JSON.stringify(ballState));
-            // console.log(ballState);
-        } else {
-            console.error('Game WebSocket is not open. Cannot send ball state.');
-        }
-    }
 
-    initGame() {
-        this.scene = new THREE.Scene();
-        this.createTable();
-        this.createRackets();
-        this.createBall();
-        this.createCamera();
-        this.createRenderer();
-        this.addLights();
-        this.addHelpers();
-        this.addEventListeners();
-        this.animate();
+    async initGame() {
+        return new Promise((resolve, reject) => {
+            try {
+                console.log("WWASDSADAS");
+                this.scene = new THREE.Scene();
+                this.createTable();
+                console.log("WWASDSADAS1");
+    
+                this.createBall();
+                console.log("WWASDSADAS2");
+    
+                this.createRackets();
+                console.log("WWASDSADAS3");
+    
+                this.createCamera();
+                console.log("WWASDSADAS4");
+    
+                this.createRenderer();
+                console.log("WWASDSADAS5");
+    
+                this.addLights();
+                console.log("WWASDSADAS6");
+    
+                this.addHelpers();
+                console.log("WWASDSADAS7");
+    
+                this.addEventListeners();
+                console.log("WWASDSADAS8");
+    
+                this.gameBuild = true;
+    
+                resolve();  // Resolve the Promise when everything is done
+            } catch (error) {
+                reject(error);  // If something fails, reject the Promise
+            }
+        });
     }
 
     createTable() {
@@ -358,160 +374,58 @@ class GameApp {
     // }
 
     moveRackets() {
-        // console.log("MoveRockets  ===> ", assignedSide);
-        // Move the local player's racket
-        if (this.assignedSide === 'left') {
-            // console.log(keyState);
-            if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
-                // console.log("CALLED1");
-                this.rRacket.position.z -= 5;
-                // console.log('Moving right racket up:', rRacket.position.z);
-            }
-            if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
-                // console.log("CALLED2");
-                this.rRacket.position.z += 5;
-                // console.log('Moving right racket down:', rRacket.position.z);
-            }
-            // console.log("CALLED");
-            if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
-                this.racket.translateZ(-5);
-                // console.log('Moving left racket up:', racket.position.z);
-            }
-            if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
-                this.racket.translateZ(5);
-                // console.log('Moving left racket down:', racket.position.z);
-            }
-            
-        } else if (this.assignedSide === 'right') {
-            // console.log(keyState);
-            if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
-                this.rRacket.translateZ(-5);
-                // console.log('Moving right racket up:', rRacket.position.z);
-            }
-            if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
-                this.rRacket.translateZ(5);
-                // console.log('Moving right racket down:', rRacket.position.z);
-            }
-            // console.log("C");
-            if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
-                // console.log("C1");
-                this.racket.position.z -= 5;
-                // console.log('Moving left racket up:', racket.position.z);
-            }
-            if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
-                // console.log("C2");
-                this.racket.position.z += 5;
-                // console.log('Moving left racket down:', racket.position.z);
-            }
-        }
-        // this.sendBallState();
-    }
 
-    moveBall()
-    {
-        this.ball.position.x += this.ballVelocity.x;
-        this.ball.position.y += this.ballVelocity.y;
-        this.ball.position.z += this.ballVelocity.z;
-    
-        this.ball.position.x = Math.max(this.tableProp.minX, Math.min(this.tableProp.maxX, this.ball.position.x));
-        this.ball.position.z = Math.max(this.tableProp.minZ, Math.min(this.tableProp.maxZ, this.ball.position.z));
-        this.checkCollision();
-    }
-
-    checkCollision() {
-        const now = Date.now();
-
-        // Skip collision check if the last collision was too recent (collision cooldown)
-        if (now - this.lastCollisionTime < this.collisionCooldown) {
+        try {
+            if (this.assignedSide === 'left') {
+                // console.log(keyState);
+                if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
+                    // console.log("CALLED1");
+                    this.rRacket.position.z -= 5;
+                    // console.log('Moving right racket up:', rRacket.position.z);
+                }
+                if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
+                    // console.log("CALLED2");
+                    this.rRacket.position.z += 5;
+                    // console.log('Moving right racket down:', rRacket.position.z);
+                }
+                // console.log("CALLED");
+                if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
+                    this.racket.translateZ(-5);
+                    // console.log('Moving left racket up:', racket.position.z);
+                }
+                if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
+                    this.racket.translateZ(5);
+                    // console.log('Moving left racket down:', racket.position.z);
+                }
+                
+            } else if (this.assignedSide === 'right') {
+                // console.log(keyState);
+                if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
+                    this.rRacket.translateZ(-5);
+                    // console.log('Moving right racket up:', rRacket.position.z);
+                }
+                if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
+                    this.rRacket.translateZ(5);
+                    // console.log('Moving right racket down:', rRacket.position.z);
+                }
+                // console.log("C");
+                if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
+                    // console.log("C1");
+                    this.racket.position.z -= 5;
+                    // console.log('Moving left racket up:', racket.position.z);
+                }
+                if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
+                    // console.log("C2");
+                    this.racket.position.z += 5;
+                    // console.log('Moving left racket down:', racket.position.z);
+                }
+            }
+        } catch (error) {
+            console.log("Error in move rackets:", error);
             return;
         }
-
-        // Ball hits the lower wall
-        if (this.ball.position.z - this.ballRadius <= this.tableProp.minZ && this.ballVelocity.z < 0) {
-            this.ballVelocity.z *= -1;
-        } 
-        // Ball hits the upper wall
-        else if (this.ball.position.z + this.ballRadius >= this.tableProp.maxZ && this.ballVelocity.z > 0) {
-            this.ballVelocity.z *= -1;
-        }
+        // Move the local player's racket
         
-        // Check collision with left racket
-        if (
-            this.ball.position.x - this.ballRadius <= this.racket.position.x + this.racketW / 2 + this.collisionBuffer &&
-            this.ball.position.x + this.ballRadius >= this.racket.position.x - this.racketW / 2 - this.collisionBuffer &&
-            this.ball.position.z + this.ballRadius >= this.racket.position.z - this.racketD / 2 - this.collisionBuffer &&
-            this.ball.position.z - this.ballRadius <= this.racket.position.z + this.racketD / 2 + this.collisionBuffer
-        ) {
-            // Check if the ball is near the edge (corners) of the paddle in the Z direction
-            const distanceFromCenterZ = Math.abs(this.ball.position.z - this.racket.position.z);
-            const isNearEdgeZ = distanceFromCenterZ >= (this.racketD / 2) - this.edgeTolerance;
-        
-            // Apply different handling if the ball hit near the edge
-            if (isNearEdgeZ) {
-                // Slightly adjust the Z velocity for smoother bounce near the paddle's edge
-                this.ballVelocity.z += (Math.random() - 0.5) * 0.4;  // Introduce random Z variation to simulate spin
-            }
-        
-            // Prevent jitter with very small velocities in X direction
-            if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
-                this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
-            }
-        
-            // Invert ball velocity on the X-axis (bounce back)
-            this.ballVelocity.x *= -1;
-        
-            // Move the ball slightly to avoid multiple collisions at the same spot
-            this.ball.position.x += this.ballVelocity.x > 0 ? this.collisionBuffer : -this.collisionBuffer;
-        
-            // Update last collision time to debounce
-            this.lastCollisionTime = now;
-        }
-        
-        // Check collision with the right racket (paddle) using the same logic
-        if (
-            this.ball.position.x - this.ballRadius <= this.rRacket.position.x + this.racketW / 2 + this.collisionBuffer &&
-            this.ball.position.x + this.ballRadius >= this.rRacket.position.x - this.racketW / 2 - this.collisionBuffer &&
-            this.ball.position.z + this.ballRadius >= this.rRacket.position.z - this.racketD / 2 - this.collisionBuffer &&
-            this.ball.position.z - this.ballRadius <= this.rRacket.position.z + this.racketD / 2 + this.collisionBuffer
-        ) {
-            // Check if the ball is near the edge (corners) of the paddle in the Z direction
-            const distanceFromCenterZ = Math.abs(this.ball.position.z - this.rRacket.position.z);
-            const isNearEdgeZ = distanceFromCenterZ >= (this.racketD / 2) - this.edgeTolerance;
-        
-            // Apply different handling if the ball hit near the edge
-            if (isNearEdgeZ) {
-                // Slightly adjust the Z velocity for smoother bounce near the paddle's edge
-                this.ballVelocity.z += (Math.random() - 0.5) * 0.4;
-            }
-        
-            // Prevent jitter with very small velocities in X direction
-            if (Math.abs(this.ballVelocity.x) < this.minVelocity) {
-                this.ballVelocity.x = (this.ballVelocity.x < 0 ? -1 : 1) * this.minVelocity;
-            }
-        
-            // Invert ball velocity on the X-axis (bounce back)
-            this.ballVelocity.x *= -1;
-        
-            // Move the ball slightly to avoid multiple collisions at the same spot
-            this.ball.position.x += this.ballVelocity.x > 0 ? this.collisionBuffer : -this.collisionBuffer;
-        
-            // Update last collision time to debounce
-            this.lastCollisionTime = now;
-        }
-    
-        // Ball goes beyond the right side (player 1 scores)
-        if (this.ball.position.x + this.ballRadius + 10 > this.tableProp.maxX + 5 && this.ballVelocity.x > 0) {
-            this.resetBall('left');
-        }
-        // Ball goes beyond the left side (player 2 scores)
-        else if (this.ball.position.x - this.ballRadius - 10 < this.tableProp.minX - 5 && this.ballVelocity.x < 0) {
-            this.resetBall('right');
-        }
-    }
-    
-    resetBall(sideToInc) {
-        this.ball.position.set(0, this.tableH / 2 + 7, -(this.tableD / 4));
-        this.sendScoreUpdate(sideToInc);
     }
 
     stopAnimation() {
@@ -640,25 +554,9 @@ class GameApp {
     animate() {
         if (!this.gameRunning) return;
         this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
-
-        // Display score
-        // updateScoreOnDis();
-        // Function to move rackets within the table boundaries
+        
         this.moveRackets();
-        // this.update();
-        this.moveBall();
 
-        const now = Date.now();
-
-        const bufferZone = 30;
-        const leftBufferZone = this.tableProp.minX + bufferZone;
-        const rightBufferZone = this.tableProp.maxX - bufferZone;
-        const ballX = this.ball.position.x;
-        // && (ballX < leftBufferZone || ballX > rightBufferZone)
-        if (now - this.lastBallUpdateTime >= 2000 && (ballX >= leftBufferZone || ballX <= rightBufferZone)) {
-            this.sendBallState();
-            this.lastBallUpdateTime = now;
-        }
 
         // Racket position to stay within table boundaries
         this.racket.position.y = Math.max(-this.tableH / 2 + this.halfRacketHeight, Math.min(this.tableH / 2 - this.halfRacketHeight, this.racket.position.y));
@@ -668,8 +566,43 @@ class GameApp {
         // orbit.update();
     }
 
-	init(friendUsername) {
+    async init(friendUsername) {
+        try {
+            console.log("EEEEEEEEEEEW");
+            await this.initGame();  // Wait for initGame to complete
+            console.log(this.gameBuild);  // This runs after initGame has resolved
+        } catch (error) {
+            console.log("Error initializing game:", error);
+            return;
+        }
+    
+
+        console.log("Checking if scene is rendering...");
+        if (!this.scene) {
+            console.error("Scene was not created properly");
+        } else {
+            console.log("Scene rendering is initialized.");
+        }       
+
+        // Proceed with the rest of your code
+        const scoreboard = document.createElement('div');
+        scoreboard.innerHTML = `
+        <div id="scoreboard">
+            <div id="player1">
+                <span id="player1-name"></span>
+            </div>
+            <div id="score-center">
+                <span id="player1-score"></span> - <span id="player2-score"></span>
+            </div>
+            <div id="player2">
+                <span id="player2-name"></span>
+            </div>
+        </div>
+        `;
+        document.getElementById('gameCon').appendChild(scoreboard);
+    
+        console.log(friendUsername);
         this.GameSocket(friendUsername);
-        console.log("IAM INIT");
     }
+    
 }

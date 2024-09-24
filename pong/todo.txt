@@ -4,13 +4,7 @@ Implement pause in local game ( IMPLEMENTED NEED TO CHECK WELL)
 
 
 remote game fix
- 
 
-
-minX = -600 + 30 = -570
-maxX = 600 - 30 = 570
-
-571 > 570
 
 
 
@@ -29,6 +23,7 @@ Modules: 7.5
 Minor module: Expanding Browser Compatibility.
 
 
+• Minor module: User and Game Stats Dashboards
 
 
 
@@ -49,7 +44,6 @@ Maybe I can add easy:
 
 • Major module: Implement Two-Factor Authentication (2FA) and JWT
 • Minor module: Game Customization Options.
-• Minor module: User and Game Stats Dashboards
 • Minor module: Expanding Browser Compatibility
 
 
@@ -72,3 +66,7 @@ but people often still refer to it as
 
 
 Django uses SHA256 as the hash function PBKDF2
+
+
+
+

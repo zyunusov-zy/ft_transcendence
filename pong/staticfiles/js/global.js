@@ -102,23 +102,6 @@ class GlobApp {
         document.getElementById('mainPageHome').style.display = 'none';
         const gameApp = new GameApp();
         gameApp.init(friendUsername);
-        const scoreboard = document.createElement('div');
-        scoreboard.innerHTML = `
-        <div id="scoreboard">
-            <div id="player1">
-                <span id="player1-name"></span>
-            </div>
-            <div id="score-center">
-                <span id="player1-score"></span> - <span id="player2-score"></span>
-            </div>
-            <div id="player2">
-                <span id="player2-name"></span>
-            </div>
-        </div>
-        `;
-        document.getElementById('gameCon').appendChild(scoreboard);
-        
-       gameApp.initGame();
     }
 
     clearS()
