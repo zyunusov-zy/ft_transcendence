@@ -24,6 +24,10 @@ function showEditProfileModal() {
             event.preventDefault();
             const formData = new FormData(editProfileForm);
             try {
+
+                await ensureValidAccessToken();
+
+
                 const response = await fetch('/api/edit-profile/', {
                     method: 'POST',
                     body: formData,

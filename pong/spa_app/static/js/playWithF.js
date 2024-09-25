@@ -13,6 +13,8 @@ function closePopup() {
 
 async function fetchFriendsList(gameApp) {
     try {
+		await ensureValidAccessToken();
+
         const response = await fetch('/get-friends/');
         const data = await response.json();
         const friendsList = data.friends;

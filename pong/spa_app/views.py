@@ -36,6 +36,39 @@ from django.utils import timezone
 from .utils import jwt_required
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class TokenRefreshView(View):
+    def post(self, request):
+        # Get the refresh token from cookies
+        refresh_token = request.COOKIES.get('refresh_token')
+        
+        if not refresh_token:
+            return JsonResponse({'success': False, 'message': 'No refresh token provided'}, status=400)
+
+        try:
+            # Create a RefreshToken instance and get a new access token
+            refresh = RefreshToken(refresh_token)
+            new_access_token = str(refresh.access_token)
+
+            response = JsonResponse({'success': True})
+
+            # Set the new access token in the cookies with the proper lifetime
+            access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+
+            response.set_cookie(
+                'access_token',
+                new_access_token,
+                httponly=True,
+                secure=True,  # Should be enabled in production (HTTPS)
+                samesite='Strict',  # Stronger CSRF protection
+                max_age=access_token_lifetime
+            )
+
+            return response
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': 'Invalid refresh token'}, status=401)
+
+
 class BaseTemplateView(View):
     template_name = 'base.html'
 

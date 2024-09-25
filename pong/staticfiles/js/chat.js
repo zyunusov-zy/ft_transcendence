@@ -138,11 +138,13 @@ function createChatBox(friend, globApp, blockStatus = false) {
     return chatBox;
 }
 
-function blockUser(friend, blockOption) {
+async function blockUser(friend, blockOption) {
     let dropMen = document.getElementById('dropdownMenu');
     dropMen.style.display = 'none';
     const isBlocking = blockOption.innerText === 'Block';
     const actionUrl = isBlocking ? `/block/${friend}/` : `/unblock/${friend}/`;
+
+    await ensureValidAccessToken();
 
     fetch(actionUrl, {
         method: 'POST',
@@ -165,7 +167,7 @@ function blockUser(friend, blockOption) {
     });
 }
 
-function viewProfile(friend) {
+async function viewProfile(friend) {
     let dropMen = document.getElementById('dropdownMenu');
     dropMen.style.display = 'none';
     let mainP = document.getElementById('mainPage');
@@ -177,6 +179,8 @@ function viewProfile(friend) {
         console.log(profileBox);
         mainP.appendChild(profileBox);
     }
+    await ensureValidAccessToken();
+
     fetch(`/api/friend-profile/${friend}/`)
         .then(response => response.json())
         .then(friend => {
@@ -327,6 +331,8 @@ function playGame(friend, globApp) {
 
 
 async function fetchMessages(friend) {
+    await ensureValidAccessToken();
+
     const response = await fetch(`/api/messages/${friend}/`);
     const messages = await response.json();
     const chatBox = document.getElementById(`chat-box-${friend}`);
@@ -349,7 +355,7 @@ async function fetchMessages(friend) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function sendMessage(friend) {
+async function sendMessage(friend) {
     const chatBox = document.getElementById(`chat-box-${friend}`);
     const input = chatBox.querySelector('.message-input');
     const messageContent = input.value;
@@ -367,6 +373,8 @@ function sendMessage(friend) {
             'message': messageContent
         }));
     } else {
+        await ensureValidAccessToken();
+
         fetch('/api/message/send/', {
             method: 'POST',
             headers: {

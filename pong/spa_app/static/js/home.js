@@ -1,5 +1,8 @@
 const fetchUserData = async () => {
     try {
+        await ensureValidAccessToken();
+
+
         const response = await fetch('/api/user-data/');
         if (!response.ok) {
             throw new Error(`Network response was not ok: ${response.statusText}`);
@@ -66,7 +69,8 @@ function initializeHome() {
     
         const requestBody = JSON.stringify({ to_user_username: friendName });
         console.log('Request body:', requestBody);
-    
+        
+        await ensureValidAccessToken();
         // Send the request
         const response = await fetch('/send-friend-request/', {
             method: 'POST',
@@ -93,6 +97,8 @@ function initializeHome() {
     });
 
     async function loadRequests() {
+        await ensureValidAccessToken();
+
         const response = await fetch('/get-friend-requests/', {
             method: 'GET',
             headers: {
@@ -148,6 +154,8 @@ function initializeHome() {
     }
     
     async function loadFriends() {
+        await ensureValidAccessToken();
+
         const response = await fetch('/get-friends/', {
             method: 'GET',
             headers: {
@@ -198,6 +206,7 @@ function initializeHome() {
         });
     }
     async function handleAcceptRequest(requestId) {
+        await ensureValidAccessToken();
 		const str = getCookie('csrftoken');
 		console.log(str);
         const response = await fetch(`/accept-friend-request/${requestId}/`, {
@@ -219,6 +228,7 @@ function initializeHome() {
     }
     
     async function handleRejectRequest(requestId) {
+        await ensureValidAccessToken();
         const response = await fetch(`/reject-friend-request/${requestId}/`, {
             method: 'POST',
             headers: {
@@ -268,7 +278,9 @@ function initializeHome() {
         if(!onlineButton || !offlineButton)
             return;
 
-        function updateStatusOnServer(status) {
+        async function updateStatusOnServer(status) {
+            await ensureValidAccessToken();
+
             fetch('/update-status/', {
                 method: 'POST',
                 headers: {
@@ -308,12 +320,14 @@ function initializeHome() {
         });
     }
 
-    historyLink.addEventListener('click', function(e) {
+    historyLink.addEventListener('click', async function(e) {
         // History
         e.preventDefault();
         document.querySelector('.play-box').style.display = 'none';
         document.querySelector('.history-box').style.display = 'flex';
     
+        await ensureValidAccessToken();
+
         fetch('/api/game-history/')
         .then(response => response.json())
         .then(data => {

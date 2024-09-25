@@ -43,7 +43,8 @@ from .views import (
 
     # 42OAuth
     OAuthConfigView,
-    Auth42CallbackView
+    Auth42CallbackView,
+    TokenRefreshView
 )
 
 
@@ -78,4 +79,5 @@ urlpatterns = [
     path('api/oauth/config/', OAuthConfigView.as_view(), name='oauth_config'),
     path('auth42/', Auth42CallbackView.as_view(), name='auth42_callback'),
     path('api/check-block-status/<str:username>/', CheckBlockStatusView.as_view(), name='check_block_status'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
