@@ -8,7 +8,7 @@ from django.contrib import admin
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('spa_app.urls')),
-    re_path(r'^ws/', include(routing.websocket_urlpatterns)),
+    re_path(r'^wss/', include(routing.websocket_urlpatterns)),
 ]
 
 if settings.DEBUG:

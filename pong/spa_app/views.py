@@ -29,6 +29,9 @@ from django.db import models
 from .consumers import update_status_and_notify_friends, sanitize_group_name
 from rest_framework_simplejwt.tokens import RefreshToken
 import requests
+from django.core.exceptions import ValidationError
+from django.utils.http import urlencode
+from django.utils.html import escape
 from django.utils import timezone
 from .utils import jwt_required
 
@@ -50,6 +53,9 @@ class LoginView(View):
     def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
+
+        if not username or not password:
+            return JsonResponse({'success': False, 'errors': 'Username and password are required.'})
 
         user = authenticate(request, username=username, password=password)
 
@@ -73,26 +79,26 @@ class LoginView(View):
                     access_token_expiry = timezone.now() + access_token_lifetime
                     refresh_token_expiry = timezone.now() + refresh_token_lifetime
 
+                    print(access_token_lifetime)
+                    print(refresh_token_lifetime)
+
                     print(access_token_expiry)
                     print(refresh_token_expiry)
 
-                    print(str(refresh.access_token))
-
-                    print(str(refresh))
                     response.set_cookie(
                         'access_token',
                         str(refresh.access_token),
                         httponly=True,
-                        # secure=True,
-                        # samesite='Lax',
+                        secure=True,
+                        samesite='Lax',
                         expires=access_token_expiry
                     )
                     response.set_cookie(
                         'refresh_token',
                         str(refresh),
                         httponly=True,
-                        # secure=True,
-                        # samesite='Lax',
+                        secure=True,
+                        samesite='Lax',
                         expires=refresh_token_expiry
                     )
                     return response
@@ -105,22 +111,24 @@ class LoginView(View):
         else:
             return JsonResponse({'success': False, 'errors': 'Invalid username or password'})
 
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("working")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
     def post(self, request):
-        username = request.POST.get('usernamesignup')
-        email = request.POST.get('emailsignup')
-        password = request.POST.get('passwordsignup')
+        username = escape(request.POST.get('usernamesignup', '').strip())
+        email = escape(request.POST.get('emailsignup', '').strip())
+        password = escape(request.POST.get('passwordsignup', '').strip())
 
-        # Password policy
+        if not username or not email or not password:
+            return JsonResponse({'success': False, 'errors': 'All fields are required.'})
+
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return JsonResponse({'success': False, 'errors': 'Invalid email format.'})
+
+        if len(password) < 8:
+            return JsonResponse({'success': False, 'errors': 'Password must be at least 8 characters long.'})
         if not re.findall('[A-Z]', password) or not re.findall('[0-9]', password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', password):
-            return JsonResponse({'success': False, 'errors': 'Password must contain at least one uppercase letter, one digit, one symbol.'})
+            return JsonResponse({'success': False, 'errors': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
 
         if User.objects.filter(username=username).exists():
             return JsonResponse({'success': False, 'errors': 'Username already exists. Please choose a different one.'})
@@ -138,20 +146,13 @@ class SignupView(View):
             send_mail(
                 'Verify your email for our awesome site',
                 f'Please click the following link to verify your email address: {verification_link}',
-                'pon42',  # need to change
+                'pon42', 
                 [email],
                 fail_silently=False,
             )
             return JsonResponse({'success': True, 'message': 'Verification email sent. Please check your email to verify your account.'})
         except Exception as e:
             return JsonResponse({'success': False, 'errors': str(e)})
-
-
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("get signup")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class FetchCSRFTokenView(View):
@@ -196,22 +197,29 @@ class UserDataView(LoginRequiredMixin, View):
 @method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetView(View):
     def post(self, request, *args, **kwargs):
-        username = request.POST.get('username')
-        email = request.POST.get('email')
+        username = escape(request.POST.get('username', '').strip())
+        email = escape(request.POST.get('email', '').strip())
 
-        print(username)
-        print(email)
+        if not username or not email:
+            return JsonResponse({'success': False, 'error': 'Username and email are required.'})
+
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return JsonResponse({'success': False, 'error': 'Invalid email format.'})
+
         try:
             user = User.objects.get(username=username, email=email)
 
             if not user.userprofile.email_verified:
                 return JsonResponse({'success': False, 'error': 'Email not verified.'})
+
             token = get_random_string(length=32)
             
             user.userprofile.reset_token = token
             user.userprofile.save()
 
             reset_url = request.build_absolute_uri('/') + f'#setnewpass?token={token}'
+
             send_mail(
                 'Password Reset',
                 f'Click the link to reset your password: {reset_url}',
@@ -223,12 +231,40 @@ class PasswordResetView(View):
 
         except User.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Invalid username or email.'})
-    
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        print("working")
-        csrf_token = get_token(request)
-        return JsonResponse({'csrfToken': csrf_token})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SetNewPasswordView(View):
+    def post(self, request, *args, **kwargs):
+        token = escape(request.POST.get('token', '').strip())
+        new_password = escape(request.POST.get('new_password', '').strip())
+        confirm_password = escape(request.POST.get('confirm_password', '').strip())
+
+        if not token or not new_password or not confirm_password:
+            return JsonResponse({'success': False, 'error': 'Token, new password, and confirmation are required.'})
+
+        if new_password != confirm_password:
+            return JsonResponse({'success': False, 'error': 'Passwords do not match.'})
+
+        if len(new_password) < 8:
+            return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters long.'})
+        if not re.findall('[A-Z]', new_password) or not re.findall('[0-9]', new_password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', new_password):
+            return JsonResponse({'success': False, 'error': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
+
+        try:
+            profile = UserProfile.objects.get(reset_token=token)
+            user = profile.user
+
+            user.password = make_password(new_password)
+            user.save()
+
+            profile.reset_token = ''
+            profile.save()
+
+            return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
+        
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Invalid token.'})
 
 class ValidateTokenView(View):
     def get(self, request, *args, **kwargs):
@@ -243,40 +279,6 @@ class ValidateTokenView(View):
         except UserProfile.DoesNotExist:
             return JsonResponse({'valid': False, 'error': 'Invalid token'})
 
-
-@method_decorator(csrf_exempt, name='dispatch')
-class SetNewPasswordView(View):
-    def post(self, request, *args, **kwargs):
-        token = request.POST.get('token')
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-
-        if not token or not new_password or not confirm_password:
-            return JsonResponse({'success': False, 'error': 'Token, new password, and confirmation are required.'})
-
-        if new_password != confirm_password:
-            return JsonResponse({'success': False, 'error': 'Passwords do not match.'})
-
-        if len(new_password) < 8:
-            return JsonResponse({'success': False, 'error': 'Password must be at least 8 characters long.'})
-        
-        if not re.findall('[A-Z]', new_password) or not re.findall('[0-9]', new_password) or not re.findall('[!@#$%^&*(),.?":{}|<>]', new_password):
-            return JsonResponse({'success': False, 'error': 'Password must contain at least one uppercase letter, one digit, and one symbol.'})
-        
-        try:
-            profile = UserProfile.objects.get(reset_token=token)
-            user = profile.user
-            user.password = make_password(new_password)
-            user.save()
-
-            profile.reset_token = ''
-            profile.save()
-
-            return JsonResponse({'success': True, 'message': 'Password has been reset successfully.'})
-        
-        except UserProfile.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Invalid token.'})
-
 # @method_decorator(login_required, name='dispatch')
 # @method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(View):
@@ -284,14 +286,22 @@ class EditProfileView(View):
     def post(self, request, *args, **kwargs):
         user = request.user
         avatar = request.FILES.get('avatar')
+        username = request.POST.get('username', '').strip()
 
-        if not avatar:
-            return JsonResponse({'success': False, 'error': 'Avatar must be provided.'})
+        if username:
+            if User.objects.filter(username=username).exclude(id=user.id).exists():
+                return JsonResponse({'success': False, 'error': 'Username is already taken.'})
+
+            if username != user.username:
+                user.username = username
+                user.save()
 
         try:
             user_profile = user.userprofile
-            if avatar is not None:
+
+            if avatar:
                 user_profile.profile_picture = avatar
+
             user_profile.save()
 
             return JsonResponse({'success': True, 'message': 'Profile updated successfully.'})
@@ -411,6 +421,7 @@ class UpdateStatusView(View):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@method_decorator(login_required, name='dispatch')
 class MessagesListView(View):
     @jwt_required
     def get(self, request, username):
@@ -437,6 +448,19 @@ class MessagesListView(View):
             })
 
         return JsonResponse(message_list, safe=False)
+
+@method_decorator(login_required, name='dispatch')
+class CheckBlockStatusView(View):
+    def get(self, request, username):
+        current_user = request.user
+        other_user = get_object_or_404(User, username=username)
+
+        has_blocked = Block.objects.filter(blocker=current_user, blocked=other_user).exists()
+        print(f" IS IT BLOCKED: {has_blocked}")
+        return JsonResponse({
+            'hasBlocked': has_blocked,
+        })
+
 
 class SendMessageView(View):
     @jwt_required
@@ -479,6 +503,7 @@ class SendMessageView(View):
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class BlockUserView(View):
     @jwt_required
     def post(self, request, friend_username):
@@ -489,6 +514,7 @@ class BlockUserView(View):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UnblockUserView(View):
     @jwt_required
     def post(self, request, friend_username):
@@ -519,6 +545,8 @@ class UnblockUserView(View):
             return JsonResponse({"error": "User not found."}, status=404)
 
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class GameHistoryView(View):
     @jwt_required
     def get(self, request, *args, **kwargs):
@@ -541,10 +569,10 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         response = JsonResponse({'success': True}, status=200)
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
         return response
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class FriendProfileView(View):
     @jwt_required
     def get(self, request, username):
@@ -574,81 +602,129 @@ class FriendProfileView(View):
         except User.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class OAuthConfigView(View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({
             'client_id': settings.FORTYTWO_CLIENT_ID,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
+            'redirect_uri': settings.FORTYTWO_THING,
             'auth_url': settings.FORTYTWO_AUTH_URL
         })
 
+@method_decorator(csrf_exempt, name='dispatch')
 class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
         code = request.GET.get('code')
         if not code:
-            print("No authorization code received.")
-            return redirect('/#login?error=Authorization+Failed')
+            return redirect(f"/#login?error='Authorization Failed'")
+        try:
+            token_url = settings.FORTYTWO_URL_TOKEN
+            token_data = {
+                'grant_type': 'authorization_code',
+                'client_id': settings.FORTYTWO_CLIENT_ID,
+                'client_secret': settings.FORTYTWO_CLIENT_SECRET,
+                'code': code,
+                'redirect_uri': settings.FORTYTWO_THING,
+            }
+            
+            token_response = requests.post(token_url, data=token_data)
+            if token_response.status_code != 200:
+                return redirect(f"/#login?error='Token Exchange Failed'")
+            
+            token_info = token_response.json()
+            access_token = token_info.get('access_token')
+            if not access_token:
+                return redirect(f"/#login?error='Invalid Token'")
 
-        print(f"Authorization code received: {code}")
+            user_info_url = settings.FORTYTWO_URL_INFO
+            headers = {'Authorization': f'Bearer {access_token}'}
+            user_response = requests.get(user_info_url, headers=headers)
 
-        # Exchange code for an access token
-        token_url = 'https://api.intra.42.fr/oauth/token'
-        token_data = {
-            'grant_type': 'authorization_code',
-            'client_id': settings.FORTYTWO_CLIENT_ID,
-            'client_secret': settings.FORTYTWO_CLIENT_SECRET,
-            'code': code,
-            'redirect_uri': settings.FORTYTWO_REDIRECT_URI,
-        }
+            if user_response.status_code != 200:
+                return redirect(f"/#login?error='Failed to Fetch User Info'")
+
+            user_data = user_response.json()
+
+            username = self.sanitize_username(user_data.get('login'))
+            email = self.sanitize_email(user_data.get('email'))
+            request.session['access_token'] = access_token
+
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                pass
+            else:
+                original_username = username
+                count = 1
+
+                while User.objects.filter(username__iexact=username).exists():
+                    username = f"{original_username}_{count}"
+                    count += 1
+
+                user = User.objects.create_user(username=username, email=email)
+                UserProfile.objects.create(user=user)
+
+            auth_login(request, user)
+            refresh = RefreshToken.for_user(user)
+
+            response = JsonResponse({'success': True})
+
+            access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
+            refresh_token_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+
+            access_token_expiry = timezone.now() + access_token_lifetime
+            refresh_token_expiry = timezone.now() + refresh_token_lifetime
+
+            print(access_token_lifetime)
+            print(refresh_token_lifetime)
+
+            print(access_token_expiry)
+            print(refresh_token_expiry)
+
+            response.set_cookie(
+                'access_token',
+                str(refresh.access_token),
+                httponly=True,
+                secure=True,
+                samesite='Lax',
+                expires=access_token_expiry
+            )
+            response.set_cookie(
+                'refresh_token',
+                str(refresh),
+                httponly=True,
+                secure=True,
+                samesite='Lax',
+                expires=refresh_token_expiry
+            )
+
+        except requests.RequestException:
+            return redirect(f"/#login?error='message': 'Internal Error'")
         
-        token_response = requests.post(token_url, data=token_data)
-        if token_response.status_code != 200:
-            print(f"Token exchange failed with status code: {token_response.status_code}")
-            print("Response body:", token_response.text)
-            return redirect('/#login?error=Token+Exchange+Failed')
-        
-        token_info = token_response.json()
-        access_token = token_info.get('access_token')
-        
-        if not access_token:
-            print("No access token received.")
-            return redirect('/#login?error=Invalid+Token')
-        
-        print(f"Access token received: {access_token}")
+        except ValidationError:
+            return redirect(f"/#login?error='Data Validation Failed'")
 
-        # Use the access token to fetch the user's information
-        user_info_url = 'https://api.intra.42.fr/v2/me'
-        headers = {'Authorization': f'Bearer {access_token}'}
-        user_response = requests.get(user_info_url, headers=headers)
-
-        if user_response.status_code != 200:
-            print(f"Failed to fetch user info with status code: {user_response.status_code}")
-            print("Response body:", user_response.text)
-            return redirect('/#login?error=Failed+to+Fetch+User+Info')
-        
-        user_data = user_response.json()
-        print("User data received:", user_data)
-
-        # Extract necessary user info like login (username)
-        username = user_data.get('login')
-        email = user_data.get('email')
-
-        print(f"User login (username): {username}")
-        print(f"User email: {email}")
-
-        # Create or get the user
-        user, created = User.objects.get_or_create(username=username, defaults={'email': email})
-
-        if created:
-            print(f"New user created: {username}")
-            # Optionally handle other profile setup here, but skip email verification
-            UserProfile.objects.get_or_create(user=user)
-        else:
-            print(f"Existing user logged in: {username}")
-
-        # Log the user in
-        auth_login(request, user)
-        print(f"User {username} logged in successfully.")
-
-        # Redirect to home after successful login
         return redirect('/#home')
+
+    def sanitize_username(self, username):
+        """
+        Sanitize and validate the username.
+        """
+        if not username:
+            raise ValidationError("Username is missing.")
+        
+        sanitized_username = re.sub(r'[^a-zA-Z0-9_]', '', username)
+        return sanitized_username.lower()
+
+    def sanitize_email(self, email):
+        """
+        Sanitize and validate the email address.
+        """
+        if not email:
+            raise ValidationError("Email is missing.")
+        
+        email = email.strip().lower()
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValidationError("Invalid email format.")
+        
+        return email

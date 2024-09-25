@@ -1,0 +1,1 @@
+rm -rf staticfiles; docker-compose down -v; docker-compose up --build

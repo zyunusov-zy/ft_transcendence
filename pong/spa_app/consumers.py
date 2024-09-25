@@ -8,6 +8,11 @@ from django.core.cache import cache
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import re
+from .ponggame import Game
+import asyncio
+from time import sleep
+
+
 
 User = get_user_model()
 
@@ -43,6 +48,8 @@ def sanitize_group_name(name):
     return sanitized_name[:100]
 
 class GlobalConsumer(AsyncWebsocketConsumer):
+    is_game_in_progress = False
+
     async def connect(self):
         self.user = self.scope['user']
 
@@ -82,6 +89,7 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         else:
             print("Group name or channel name not found during disconnection.")
 
+
     async def receive(self, text_data):
         data = json.loads(text_data)
         receiver_username = data.get('receiver_username')
@@ -92,6 +100,16 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         print(f"GlobalConsumer: Received data: {data}")
 
         if receiver_username and game_request:
+            if GlobalConsumer.is_game_in_progress:
+                await self.send(text_data=json.dumps({
+                    'type': 'game_in_progress',
+                    'message': 'Another game request is already in progress. Please wait.'
+                }))
+                print(f"GlobalConsumer: A game is already in progress. Request from user {sender_id} rejected.")
+                return
+
+            GlobalConsumer.is_game_in_progress = True
+
             try:
                 receiver = await sync_to_async(User.objects.get)(username=receiver_username)
                 receiver_profile = await sync_to_async(UserProfile.objects.get)(user=receiver)
@@ -110,7 +128,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     }))
                     print(f"GlobalConsumer: User {receiver_username} is offline. Request rejected.")
                 else:
-                    # Sanitize the recipient's group name and send the game request
                     receiver_id = receiver.id
                     recipient_channel_name = sanitize_group_name(f"user_{receiver_id}")
                     
@@ -129,7 +146,9 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     print(f"GlobalConsumer: Game request sent to channel {recipient_channel_name}.")
             except User.DoesNotExist:
                 print(f"GlobalConsumer: User with username {receiver_username} does not exist.")
+                GlobalConsumer.is_game_in_progress = False
         elif response:
+            # Handle game response
             original_sender_id = data.get('receiver_id')
             sender_channel_name = sanitize_group_name(f"user_{original_sender_id}")
             
@@ -143,8 +162,10 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     'responder_username': self.user.username,
                 }
             )
+
+            GlobalConsumer.is_game_in_progress = False
             
-            print(f"GlobalConsumer: Game response sent to channel {sender_channel_name}.")
+            print(f"GlobalConsumer: Game response sent to channel {sender_channel_name}. Game status reset.")
 
     async def game_request(self, event):
         game_request = event['game_request']
@@ -184,6 +205,8 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         print("Updating status")
         print(event['username'])
         print(event['status'])
+        if event['status'] == 'available':
+            GlobalConsumer.is_game_in_progress = False
         await self.send(text_data=json.dumps({
             'type': 'friend_status_update',
             'username': event['username'],
@@ -276,21 +299,121 @@ class Player:
         self.score = 0
         self.winner = 0
 
+class GameManager:
+    games = {}
+    player_status = {} 
+    players_in_rooms = {}
+
+    @classmethod
+    def get_game(cls, room_name):
+        """
+        Get or create a new game instance for the room.
+        """
+        if room_name not in cls.games:
+            cls.games[room_name] = Game()
+            cls.player_status[room_name] = {}
+            cls.players_in_rooms[room_name] = set()
+        return cls.games[room_name]
+
+    @classmethod
+    def add_player(cls, room_name, username):
+        """
+        Add a player to the game room and mark them as not ready initially.
+        """
+        if room_name not in cls.player_status:
+            cls.player_status[room_name] = {}
+        
+        cls.player_status[room_name][username] = False
+        cls.players_in_rooms[room_name].add(username)
+
+    @classmethod
+    def mark_player_ready(cls, room_name, username):
+        """
+        Mark a player as ready.
+        """
+        if room_name in cls.player_status:
+            cls.player_status[room_name][username] = True
+
+    @classmethod
+    def both_ready(cls, room_name):
+        """
+        Check if both players in the room are ready.
+        """
+        if room_name not in cls.player_status:
+            return False
+        
+        players_ready = cls.player_status[room_name]
+        return len(players_ready) == 2 and all(players_ready.values())
+
+    @classmethod
+    def both_users_connected(cls, room_name):
+        """
+        Check if both users in the room are connected.
+        """
+        if room_name not in cls.players_in_rooms:
+            return False
+        
+        connected_players = cls.players_in_rooms[room_name]
+        return len(connected_players) == 2
+
+    @classmethod
+    def reset_last_game(cls, room_name):
+        print(f"IN RESET {room_name}")
+        print(cls.games)
+        print(room_name in cls.games)
+        if room_name in cls.games:
+            print("IN IF RESET")
+            game = cls.games[room_name]
+            game.reset()
+            
+            cls.player_status[room_name] = {player: False for player in cls.players_in_rooms[room_name]}
+            cls.games[room_name].score = {'left': 0, 'right': 0}
+
+
+            cls.players_in_rooms[room_name].clear()
+
+            print(f"Game in room '{room_name}' has been reset. Players cleared from the room.")
+
+    @classmethod
+    def remove_player(cls, room_name, username):
+        """
+        Remove a player from the game room.
+        """
+        if room_name in cls.player_status and username in cls.player_status[room_name]:
+            del cls.player_status[room_name][username]
+            cls.players_in_rooms[room_name].discard(username)
+
+            if len(cls.players_in_rooms[room_name]) < 2:
+                cls.reset_last_game(room_name)
+
+
+
+
 class GameConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.game = None
+        self.update_task = None
+        self.connected_users = 0
+        self.room_group_name = None
+
     async def connect(self):
+        await self.accept()
+
         self.user = self.scope["user"].username
         self.friend = self.scope["url_route"]["kwargs"]["username"]
         self.room_name = sanitize_group_name(''.join(sorted([self.user, self.friend])))
         self.room_group_name = f'game_{self.room_name}'
 
-        # print(f"User {self.user} connecting to game room: {self.room_name}")
+
         self.cache_key = f'game_saved_{self.room_name}'
+        self.game = GameManager.get_game(self.room_group_name)
+        GameManager.add_player(self.room_group_name, self.user)
 
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
-        await self.accept()
 
         self.players = {
             'left': Player(self.user, 'left') if self.user < self.friend else Player(self.friend, 'left'),
@@ -299,11 +422,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.side = self.players['left'].side if self.user < self.friend else self.players['right'].side
 
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
-        friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
-
         await database_sync_to_async(update_status_and_notify_friends)(user_obj, 'in_game')
-        await database_sync_to_async(update_status_and_notify_friends)(friend_user_obj, 'in_game')
-
 
         await self.send(text_data=json.dumps({
             'type': 'side_assignment',
@@ -319,49 +438,171 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             }
         }))
-        print(f"Connected user: {self.user} on side {self.side}")
-        print(f"User {self.user} connected to game room: {self.room_group_name} on side {self.side}")
+
+        await self.wait_for_users()
+
+        await self.send_ready_signal()
+
+    async def wait_for_users(self):
+        print(f"[DEBUG] Waiting for both users to connect in room: {self.room_group_name}")
+
+        start_time = asyncio.get_event_loop().time()
+        timeout_duration = 5
+        
+        while not GameManager.both_users_connected(self.room_group_name):
+            current_time = asyncio.get_event_loop().time()
+            elapsed_time = current_time - start_time
+            
+            if elapsed_time > timeout_duration:
+                print(f"[DEBUG] Timeout reached. Disconnecting user: {self.user}")
+                await self.disconnect()
+                self.game.game_running = False
+                
+                return
+
+            await asyncio.sleep(1)
+
+    async def send_ready_signal(self):
+        print(f"Requesting ready signal for {self.user}")
+        await self.send(text_data=json.dumps({
+            'type': 'request_ready',
+        }))
+
+    async def send_game_start(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'game_start'
+        }))
+
+    async def send_game_state(self):
+        ball_position = self.game.ball_position
+        scores = self.game.score
+        ball_velocity = self.game.ball_velocity
+        message = {
+            'type': 'ball_state',
+            'velocity': ball_velocity,
+            'ball_position': ball_position,
+            'scores': scores
+        }
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'ball_state',
+                'message': message
+            }
+        )
+
+    async def ball_state(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps(message))
+
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        data['user'] = self.user
+        data['side'] = self.side
+
+        if data['type'] == 'player_ready':
+            print(f"{self.user} READY?")
+            GameManager.mark_player_ready(self.room_group_name, self.user)
+
+            if GameManager.both_ready(self.room_group_name):
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'send_game_start',
+                    }
+                )
+
+                if not self.game.game_running:
+                    self.game.start()
+                    print(f"RUNING THE GAME {self.user}")
+                    self.game.set_update_callback(self.send_game_state)
+                    self.game.set_score_update_callback(self.send_score_update)
+                    self.game.set_end_game_callback(self.send_game_over)
+                    self.update_task = asyncio.create_task(self.game.game_loop())
+        elif data['type'] == 'move':
+            racket_position = data['position']
+            side = data['side']
+            keyState = data['keyState']
+            if side == 'left':
+                self.game.left_racket_position[2] = racket_position['z']
+            elif side == 'right':
+                self.game.right_racket_position[2] = racket_position['z']
+
+            await self.send_game_state_mov(side, keyState)
+
+    async def send_game_state_mov(self, side, keyState):
+
+        message = {
+            'type': 'move',
+            'side': side,
+            'keyState': keyState
+        }
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_message',
+                'message': message
+            }
+        )
+
+    async def send_score_update(self, score):
+        self.players['left'].score = score['left']
+        self.players['right'].score = score['right']
+        message = {
+            'type': 'score_update',
+            'players': {
+                'left': {'username': self.players['left'].username, 'score': score['left']},
+                'right': {'username': self.players['right'].username, 'score': score['right']}
+            }
+        }
+
+        print(message)
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_message',
+                'message': message
+            }
+        )
 
     async def disconnect(self, close_code):
-        print(f"[DEBUG] Disconnect method called for user: {self.user}")
-        print(f"[DEBUG] Print {cache.get(self.cache_key)}")
-
-         # Retrieve the current disconnect counter from the cache
-        disconnect_count_key = f"{self.cache_key}_disconnect_count"
-        disconnect_count = cache.get(disconnect_count_key) or 0
-        disconnect_count += 1
-        cache.set(disconnect_count_key, disconnect_count, None)
-
-        print(f"[DEBUG] Disconnect count for {self.room_name}: {disconnect_count}")
-        print(f"[DEBUG] Cached value for {self.cache_key}: {cache.get(self.cache_key)}")
-
-        if not cache.get(self.cache_key):
-            if self.players['left'].score == 0 and self.players['right'].score == 0:
-                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
-            else:
-                # Proceed to save the game history
-                cache.set(self.cache_key, True, None)
-                print(f"[DEBUG] Setting cache key {self.cache_key}")
-
-                winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
-                winner = await database_sync_to_async(User.objects.get)(username=winner_username)
-                print("HEREEEEEEEEEWWWW")
-                game_record = await database_sync_to_async(GameHistory.objects.create)(
-                    player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
-                    player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
-                    score_player1=self.players['left'].score,
-                    score_player2=self.players['right'].score,
-                    winner=winner
-                )
-                print(f"[DEBUG] Game record created with ID: {game_record.id}")
-                print("Game Record:", game_record)
-
-        if disconnect_count >= 2:
-            print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
-        
-            # Reset the game cache and disconnect counter
-            cache.delete(self.cache_key)
-            cache.delete(disconnect_count_key)
+        if self.game.game_running:
+            self.game.game_running = False
+            remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
+            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
+            
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_cancelled_message',
+                    'message': {
+                        'type': 'game_cancelled',
+                        'reason': f"Player {self.user} disconnected. The game will not be counted.",
+                        'go_home': True
+                    }
+                }
+            )
+        score1 = self.players['left'].score == 0 and self.players['right'].score == 0
+        if not self.game.game_running and score1:
+            self.game.game_running = False
+            remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
+            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
+            
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_cancelled_message',
+                    'message': {
+                        'type': 'game_cancelled',
+                        'reason': f"Player {self.user} disconnected. The game will not be counted.",
+                        'go_home': True
+                    }
+                }
+            )
+        print("Calling reset!!!")
+        GameManager.reset_last_game(self.room_group_name)
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
@@ -375,90 +616,65 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
 
-    async def receive(self, text_data):
-        # print(f"Received data from {self.user}: {text_data}")
-        data = json.loads(text_data)
-        data['user'] = self.user
-        data['side'] = self.side
+    async def save_game_if_necessary(self):
+        is_game_saved = cache.get(self.cache_key)
 
-        if data['type'] == 'score_update':
-            print(f"Received side: {data['player']}")
-            if data['player'] == 'left':
-                self.players['left'].score += 1
-                print(f"Player {self.players['left'].username} (left) scored. New score: {self.players['left'].score}")
+        print(f"{self.players['left'].username} : {self.players['left']. winner} or {self.players['right'].username} : {self.players['right']. winner}" )
+        
+        print(f"[DEBUG] Checking if game save is necessary. Game saved: {is_game_saved}")
+        
+        if not is_game_saved:
+            if self.players['left'].score == 0 and self.players['right'].score == 0:
+                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
             else:
-                self.players['right'].score += 1
-                print(f"Player {self.players['right'].username} (right) scored. New score: {self.players['right'].score}")
-            
-            if self.players['left'].score >= 5:
-                self.players['left'].winner = 1
-                await self.send_game_over(self.players['left'].username)
-            elif self.players['right'].score >= 5:
-                self.players['right'].winner = 1
-                await self.send_game_over(self.players['right'].username)
+                cache.set(self.cache_key, True, None)
+                print(f"[DEBUG] Setting cache key {self.cache_key}")
 
-            await self.send(text_data=json.dumps({
-                'type': 'score_update',
-                'players': {
-                    'left': {
-                        'username': self.players['left'].username,
-                        'score': self.players['left'].score
-                    },
-                    'right': {
-                        'username': self.players['right'].username,
-                        'score': self.players['right'].score
-                    }
-                }
-            }))
-        else:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'game_message',
-                    'message': data
-                }
-            )
+                winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
+                winner = await database_sync_to_async(User.objects.get)(username=winner_username)
 
-    async def game_message(self, event):
+                print(f"[DEBUG] Saving game history for {self.room_name}")
+                game_record = await database_sync_to_async(GameHistory.objects.create)(
+                    player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
+                    player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
+                    score_player1=self.players['left'].score,
+                    score_player2=self.players['right'].score,
+                    winner=winner
+                )
+                print(f"[DEBUG] Game record created with ID: {game_record.id}")
+                print("Game Record:", game_record)
+
+    async def game_cancelled_message(self, event):
+        print("HERE SENDING MESSAGE")
         message = event['message']
-        # print(f"Received message to send to {self.user}: {message}")
         await self.send(text_data=json.dumps(message))
 
-        if message['type'] == 'ball_state':
-            # print(f"Broadcasting ball state: Position - {message['position']}, Velocity - {message['velocity']}")
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'send_ball_state',
-                    'position': message['position'],
-                    'velocity': message['velocity'],
-                }
-            )
-        # print(f"Sent message to {self.user}: {message}")
 
-    async def send_ball_state(self, event):
-        # print(f"Sending ball state to clients: Position - {event['position']}, Velocity - {event['velocity']}")
-        await self.send(text_data=json.dumps({
-            'type': 'ball_state',
-            'position': event['position'],
-            'velocity': event['velocity'],
-        }))
+    async def mark_game_complete(self):
+        game_completed_key = f"{self.cache_key}_game_completed"
+        
+        cache.set(game_completed_key, True, None)
+        print(f"[DEBUG] Game marked as completed for {self.room_name}")
+        
+        await self.save_game_if_necessary()
 
-    async def score_update(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'score_update',
-            'players': event['players']
-        }))
-        print(f"Score update sent: {event['players']}")
+    async def game_message(self, event):
+        try:
+            message = event['message']
+            await self.send(text_data=json.dumps(message))
+        except Disconnected:
+            print(f"WebSocket is already disconnected, cannot send message.{event}")
 
-    async def send_game_over(self, winner_username):
+
+    async def send_game_over(self, winner_side):
+
+        if winner_side == 'left':
+            winner_username = self.players['left'].username
+            self.players['left'].winner = 1
+        elif winner_side == 'right':
+            winner_username = self.players['right'].username
+            self.players['right'].winner = 1
         print(f"[DEBUG] send_game_over called by {self.user}. Winner: {winner_username}")
-        winner = await database_sync_to_async(User.objects.get)(username=winner_username)
-        print(f"[DEBUG] Winner fetched: {winner.username}")
-        player1 = await database_sync_to_async(User.objects.get)(username=self.players['left'].username)
-        player2 = await database_sync_to_async(User.objects.get)(username=self.players['right'].username)
-
-        print(f"[DEBUG] Player 1: {player1.username}, Player 2: {player2.username}")
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -470,6 +686,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             }
         )
+        await self.mark_game_complete()
 
     async def game_over_message(self, event):
         message = event['message']
