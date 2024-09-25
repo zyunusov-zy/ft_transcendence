@@ -54,6 +54,7 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         self.user = self.scope['user']
 
         if self.user.is_authenticated:
+            # Use the user's ID to avoid issues with username changes
             self.group_name = sanitize_group_name(f"user_{self.user.id}")
 
             print(f"User {self.user.id} connecting to user-specific channel {self.group_name}")
@@ -64,8 +65,10 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             )
             await self.accept()
 
-            self.user_obj = await database_sync_to_async(User.objects.get)(username=self.user.username)
-        
+            # Use self.user.id instead of username
+            self.user_obj = await database_sync_to_async(User.objects.get)(id=self.user.id)
+            
+            # Notify friends about the user's online status
             await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'online')
             
             print(f"User {self.user.id} accepted in user-specific channel {self.group_name}")
@@ -81,8 +84,11 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 self.channel_name
             )
-            self.user_obj = await database_sync_to_async(User.objects.get)(username=self.user.username)
-        
+
+            # Use self.user.id instead of username
+            self.user_obj = await database_sync_to_async(User.objects.get)(id=self.user.id)
+            
+            # Notify friends about the user's offline status
             await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'offline')
             
             print(f"User {self.user.id} removed from user-specific channel {self.group_name}")
@@ -525,9 +531,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             side = data['side']
             keyState = data['keyState']
             if side == 'left':
-                self.game.left_racket_position[2] = racket_position['z']
+                self.game.left_racket_position[2] = racket_position['z'] + 5
             elif side == 'right':
-                self.game.right_racket_position[2] = racket_position['z']
+                self.game.right_racket_position[2] = racket_position['z'] + 5
 
             await self.send_game_state_mov(side, keyState)
 

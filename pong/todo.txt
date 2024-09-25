@@ -7,6 +7,10 @@ remote game fix
 
 !!!!CHECK_COLLISIONS MAYBE CHANGE A BIT (WITH RACKET I THINK)
 
+collision with racket sometimes not happening even if it is hitting it 
+
+what can be the problem?
+
 
 Modules: 7.5
 
