@@ -300,10 +300,9 @@ class Player:
         self.winner = 0
 
 class GameManager:
-    # A dictionary to hold all game instances by room name
     games = {}
-    player_status = {}  # To track the ready status of players in each room
-    players_in_rooms = {}  # Track players in rooms
+    player_status = {} 
+    players_in_rooms = {}
 
     @classmethod
     def get_game(cls, room_name):
@@ -311,9 +310,9 @@ class GameManager:
         Get or create a new game instance for the room.
         """
         if room_name not in cls.games:
-            cls.games[room_name] = Game()  # Game would be your game logic class
-            cls.player_status[room_name] = {}  # Initialize player status for the room
-            cls.players_in_rooms[room_name] = set()  # Track players in the room
+            cls.games[room_name] = Game()
+            cls.player_status[room_name] = {}
+            cls.players_in_rooms[room_name] = set()
         return cls.games[room_name]
 
     @classmethod
@@ -324,8 +323,8 @@ class GameManager:
         if room_name not in cls.player_status:
             cls.player_status[room_name] = {}
         
-        cls.player_status[room_name][username] = False  # Player is not ready initially
-        cls.players_in_rooms[room_name].add(username)  # Add the player to the room
+        cls.player_status[room_name][username] = False
+        cls.players_in_rooms[room_name].add(username)
 
     @classmethod
     def mark_player_ready(cls, room_name, username):
@@ -333,7 +332,7 @@ class GameManager:
         Mark a player as ready.
         """
         if room_name in cls.player_status:
-            cls.player_status[room_name][username] = True  # Mark the player as ready
+            cls.player_status[room_name][username] = True
 
     @classmethod
     def both_ready(cls, room_name):
@@ -343,7 +342,6 @@ class GameManager:
         if room_name not in cls.player_status:
             return False
         
-        # Ensure there are two players in the room and check if both are ready
         players_ready = cls.player_status[room_name]
         return len(players_ready) == 2 and all(players_ready.values())
 
@@ -355,24 +353,26 @@ class GameManager:
         if room_name not in cls.players_in_rooms:
             return False
         
-        # Ensure there are two players in the room and check if both are connected
         connected_players = cls.players_in_rooms[room_name]
         return len(connected_players) == 2
 
     @classmethod
     def reset_last_game(cls, room_name):
-        """
-        Reset the last game state, scores, and player statuses.
-        """
+        print(f"IN RESET {room_name}")
+        print(cls.games)
+        print(room_name in cls.games)
         if room_name in cls.games:
+            print("IN IF RESET")
             game = cls.games[room_name]
-            game.reset()  # Assuming Game has a reset method to reset game state
+            game.reset()
             
-            # Reset player statuses and scores
             cls.player_status[room_name] = {player: False for player in cls.players_in_rooms[room_name]}
-            cls.games[room_name].score = {'left': 0, 'right': 0}  # Reset scores
+            cls.games[room_name].score = {'left': 0, 'right': 0}
 
-            print(f"Game in room '{room_name}' has been reset.")
+
+            cls.players_in_rooms[room_name].clear()
+
+            print(f"Game in room '{room_name}' has been reset. Players cleared from the room.")
 
     @classmethod
     def remove_player(cls, room_name, username):
@@ -381,9 +381,8 @@ class GameManager:
         """
         if room_name in cls.player_status and username in cls.player_status[room_name]:
             del cls.player_status[room_name][username]
-            cls.players_in_rooms[room_name].discard(username)  # Remove the player from the room
+            cls.players_in_rooms[room_name].discard(username)
 
-            # Optionally, reset the game if a player leaves and it's not a solo game
             if len(cls.players_in_rooms[room_name]) < 2:
                 cls.reset_last_game(room_name)
 
@@ -396,10 +395,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.game = None
         self.update_task = None
         self.connected_users = 0
-        self.room_name = None
+        self.room_group_name = None
 
     async def connect(self):
-        # Accept the WebSocket connection first
         await self.accept()
 
         self.user = self.scope["user"].username
@@ -407,28 +405,25 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.room_name = sanitize_group_name(''.join(sorted([self.user, self.friend])))
         self.room_group_name = f'game_{self.room_name}'
 
-        # Get or create a new game instance and add the player
+
+        self.cache_key = f'game_saved_{self.room_name}'
         self.game = GameManager.get_game(self.room_group_name)
         GameManager.add_player(self.room_group_name, self.user)
 
-        # Add the user to the group channel
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
 
-        # Assign players to sides and send the side assignment message
         self.players = {
             'left': Player(self.user, 'left') if self.user < self.friend else Player(self.friend, 'left'),
             'right': Player(self.friend, 'right') if self.user < self.friend else Player(self.user, 'right')
         }
         self.side = self.players['left'].side if self.user < self.friend else self.players['right'].side
 
-        # Update player status in the database
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         await database_sync_to_async(update_status_and_notify_friends)(user_obj, 'in_game')
 
-        # Send side assignment and player info to the client
         await self.send(text_data=json.dumps({
             'type': 'side_assignment',
             'side': self.side,
@@ -444,11 +439,28 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         }))
 
-        while not GameManager.both_users_connected(self.room_group_name):
-            await asyncio.sleep(1)
-        await asyncio.sleep(2)
+        await self.wait_for_users()
 
         await self.send_ready_signal()
+
+    async def wait_for_users(self):
+        print(f"[DEBUG] Waiting for both users to connect in room: {self.room_group_name}")
+
+        start_time = asyncio.get_event_loop().time()
+        timeout_duration = 5
+        
+        while not GameManager.both_users_connected(self.room_group_name):
+            current_time = asyncio.get_event_loop().time()
+            elapsed_time = current_time - start_time
+            
+            if elapsed_time > timeout_duration:
+                print(f"[DEBUG] Timeout reached. Disconnecting user: {self.user}")
+                await self.disconnect()
+                self.game.game_running = False
+                
+                return
+
+            await asyncio.sleep(1)
 
     async def send_ready_signal(self):
         print(f"Requesting ready signal for {self.user}")
@@ -457,7 +469,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
     async def send_game_start(self, event):
-        print(f"sendin game start for {self.user}")
         await self.send(text_data=json.dumps({
             'type': 'game_start'
         }))
@@ -475,16 +486,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                'type': 'ball_state',  # This should match the handler in your consumer
-                'message': message           # Here is your message content
+                'type': 'ball_state',
+                'message': message
             }
         )
 
     async def ball_state(self, event):
-        # Handler for the ball state messages
-        message = event['message']  # Change this to access 'message'
-        # Send the message to WebSocket
-        print(f"Sending to {self.user} : {message}")
+        message = event['message']
         await self.send(text_data=json.dumps(message))
 
 
@@ -493,17 +501,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         data['user'] = self.user
         data['side'] = self.side
 
-        # Handle 'player_ready' type message
         if data['type'] == 'player_ready':
             print(f"{self.user} READY?")
             GameManager.mark_player_ready(self.room_group_name, self.user)
 
-            # Check if both players are ready
             if GameManager.both_ready(self.room_group_name):
-                # Wait a short time to ensure synchronization
-                await asyncio.sleep(1)
-
-                # Notify both clients that the game is starting
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
@@ -511,51 +513,66 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 )
 
-                # Start the game loop if it's not already running
                 if not self.game.game_running:
                     self.game.start()
                     print(f"RUNING THE GAME {self.user}")
                     self.game.set_update_callback(self.send_game_state)
-                    self.update_task = asyncio.create_task(self.game.game_loop())  # Start the game loop
-        #     if data['type'] == 'game_complete' and data['game_status'] == 'completed':
-        #         await self.mark_game_complete()
-        else:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'game_message',
-                    'message': data
-                }
-            )
+                    self.game.set_score_update_callback(self.send_score_update)
+                    self.game.set_end_game_callback(self.send_game_over)
+                    self.update_task = asyncio.create_task(self.game.game_loop())
+        elif data['type'] == 'move':
+            racket_position = data['position']
+            side = data['side']
+            keyState = data['keyState']
+            if side == 'left':
+                self.game.left_racket_position[2] = racket_position['z']
+            elif side == 'right':
+                self.game.right_racket_position[2] = racket_position['z']
+
+            await self.send_game_state_mov(side, keyState)
+
+    async def send_game_state_mov(self, side, keyState):
+
+        message = {
+            'type': 'move',
+            'side': side,
+            'keyState': keyState
+        }
+
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_message',
+                'message': message
+            }
+        )
+
+    async def send_score_update(self, score):
+        self.players['left'].score = score['left']
+        self.players['right'].score = score['right']
+        message = {
+            'type': 'score_update',
+            'players': {
+                'left': {'username': self.players['left'].username, 'score': score['left']},
+                'right': {'username': self.players['right'].username, 'score': score['right']}
+            }
+        }
+
+        print(message)
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_message',
+                'message': message
+            }
+        )
 
     async def disconnect(self, close_code):
-        print(f"[DEBUG] Disconnect method called for user: {self.user}")
-        # Stop the game if it's running
-        GameManager.reset_last_game(self.room_name)
-        print("Disconnecting, stopping the game...")
-        
-        # Ensure the cache key is consistent and checked reliably
-        disconnect_count_key = f"{self.cache_key}_disconnect_count"
-        
-        # Retrieve and update the disconnect count
-        disconnect_count = cache.get(disconnect_count_key) or 0
-        disconnect_count += 1
-        cache.set(disconnect_count_key, disconnect_count, None)
-        
-        print(f"[DEBUG] Disconnect count for {self.room_name}: {disconnect_count}")
-        print(f"[DEBUG] Cached value for {self.cache_key}: {cache.get(self.cache_key)}")
-
-        # Check the completion status of the game
-        game_completed_key = f"{self.cache_key}_game_completed"
-        game_completed = cache.get(game_completed_key)
-        print(f"[DEBUG] Game completion status: {game_completed}")
-
-        # Handle game cancellation for the first disconnect if the game is not completed
-        if disconnect_count == 1 and not game_completed:
+        if self.game.game_running:
+            self.game.game_running = False
             remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
             print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
             
-            # Send game cancellation message
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -567,16 +584,25 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
-            cache.set(self.cache_key, True, None)
-
-        await self.save_game_if_necessary()
-
-        if disconnect_count >= 2:
-            print(f"[DEBUG] Both players disconnected. Resetting cache for game: {self.room_name}")
-            cache.delete(self.cache_key)
-            cache.delete(disconnect_count_key)
-
-        # Update user status and clean up
+        score1 = self.players['left'].score == 0 and self.players['right'].score == 0
+        if not self.game.game_running and score1:
+            self.game.game_running = False
+            remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
+            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
+            
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_cancelled_message',
+                    'message': {
+                        'type': 'game_cancelled',
+                        'reason': f"Player {self.user} disconnected. The game will not be counted.",
+                        'go_home': True
+                    }
+                }
+            )
+        print("Calling reset!!!")
+        GameManager.reset_last_game(self.room_group_name)
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
 
@@ -591,19 +617,16 @@ class GameConsumer(AsyncWebsocketConsumer):
 
 
     async def save_game_if_necessary(self):
-        game_completed_key = f"{self.cache_key}_game_completed"
-        
-        # Ensure the cache state is checked consistently
         is_game_saved = cache.get(self.cache_key)
-        is_game_completed = cache.get(game_completed_key)
+
+        print(f"{self.players['left'].username} : {self.players['left']. winner} or {self.players['right'].username} : {self.players['right']. winner}" )
         
-        print(f"[DEBUG] Checking if game save is necessary. Game saved: {is_game_saved}, Game completed: {is_game_completed}")
+        print(f"[DEBUG] Checking if game save is necessary. Game saved: {is_game_saved}")
         
-        if not is_game_saved and is_game_completed:
+        if not is_game_saved:
             if self.players['left'].score == 0 and self.players['right'].score == 0:
                 print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
             else:
-                # Proceed to save the game history
                 cache.set(self.cache_key, True, None)
                 print(f"[DEBUG] Setting cache key {self.cache_key}")
 
@@ -630,11 +653,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def mark_game_complete(self):
         game_completed_key = f"{self.cache_key}_game_completed"
         
-        # Set the flag in the cache that the game was completed
         cache.set(game_completed_key, True, None)
         print(f"[DEBUG] Game marked as completed for {self.room_name}")
         
-        # Now you can proceed to save the game if necessary
         await self.save_game_if_necessary()
 
     async def game_message(self, event):
@@ -644,41 +665,16 @@ class GameConsumer(AsyncWebsocketConsumer):
         except Disconnected:
             print(f"WebSocket is already disconnected, cannot send message.{event}")
 
-        if message['type'] == 'ball_state':
-            # print(f"Broadcasting ball state: Position - {message['position']}, Velocity - {message['velocity']}")
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'send_ball_state',
-                    'position': message['position'],
-                    'velocity': message['velocity'],
-                }
-            )
-        # print(f"Sent message to {self.user}: {message}")
 
-    async def send_ball_state(self, event):
-        # print(f"Sending ball state to clients: Position - {event['position']}, Velocity - {event['velocity']}")
-        await self.send(text_data=json.dumps({
-            'type': 'ball_state',
-            'position': event['position'],
-            'velocity': event['velocity'],
-        }))
+    async def send_game_over(self, winner_side):
 
-    async def score_update(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'score_update',
-            'players': event['players']
-        }))
-        print(f"Score update sent: {event['players']}")
-
-    async def send_game_over(self, winner_username):
+        if winner_side == 'left':
+            winner_username = self.players['left'].username
+            self.players['left'].winner = 1
+        elif winner_side == 'right':
+            winner_username = self.players['right'].username
+            self.players['right'].winner = 1
         print(f"[DEBUG] send_game_over called by {self.user}. Winner: {winner_username}")
-        winner = await database_sync_to_async(User.objects.get)(username=winner_username)
-        print(f"[DEBUG] Winner fetched: {winner.username}")
-        player1 = await database_sync_to_async(User.objects.get)(username=self.players['left'].username)
-        player2 = await database_sync_to_async(User.objects.get)(username=self.players['right'].username)
-
-        print(f"[DEBUG] Player 1: {player1.username}, Player 2: {player2.username}")
 
         await self.channel_layer.group_send(
             self.room_group_name,

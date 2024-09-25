@@ -5,7 +5,7 @@ Implement pause in local game ( IMPLEMENTED NEED TO CHECK WELL)
 
 remote game fix
 
-
+!!!!CHECK_COLLISIONS MAYBE CHANGE A BIT (WITH RACKET I THINK)
 
 
 Modules: 7.5

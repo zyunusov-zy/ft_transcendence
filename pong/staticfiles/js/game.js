@@ -215,11 +215,17 @@ class GameApp {
     }
 
     sendMovement(keyStateU) {
+        let racket_pos =- null;
+        if (this.assignedSide === 'left')
+            racket_pos = this.racket.position;
+        else
+            racket_pos = this.rRacket.position;
         if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
             this.gameSocket.send(JSON.stringify({
                 type: 'move',
                 keyState: keyStateU,
-                side: this.assignedSide
+                side: this.assignedSide,
+                position: racket_pos
             }));
         } else {
             console.error('Game WebSocket is not open. Cannot send movement.');

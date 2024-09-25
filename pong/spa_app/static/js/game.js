@@ -134,15 +134,15 @@ class GameApp {
 
     startAnimation() {
         console.log("GAME STARTED");
-        this.gameRunning = true;  // Set the flag to indicate the game is running
-        this.animate();  // Start the animation loop
+        this.gameRunning = true;
+        this.animate();
     }
 
     handleGameCancelled(reason)
     {
         this.gameRunning = false;
         this.stopAnimation();
-        this.cleanUp(0);
+        this.cleanUp();
 
         const gameCon = document.getElementById('gameCon');
         gameCon.innerHTML = `
@@ -175,9 +175,7 @@ class GameApp {
     }
 
     handleBallState(data) {
-        // Correct the access to ball_position
         this.ball.position.set(data.ball_position[0], data.ball_position[1], data.ball_position[2]);
-        // Correct the access to velocity
         this.ballVelocity.set(data.velocity[0], data.velocity[1], data.velocity[2]);
     }
 
@@ -215,11 +213,17 @@ class GameApp {
     }
 
     sendMovement(keyStateU) {
+        let racket_pos =- null;
+        if (this.assignedSide === 'left')
+            racket_pos = this.racket.position;
+        else
+            racket_pos = this.rRacket.position;
         if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
             this.gameSocket.send(JSON.stringify({
                 type: 'move',
                 keyState: keyStateU,
-                side: this.assignedSide
+                side: this.assignedSide,
+                position: racket_pos
             }));
         } else {
             console.error('Game WebSocket is not open. Cannot send movement.');
@@ -230,37 +234,20 @@ class GameApp {
     async initGame() {
         return new Promise((resolve, reject) => {
             try {
-                console.log("WWASDSADAS");
                 this.scene = new THREE.Scene();
                 this.createTable();
-                console.log("WWASDSADAS1");
-    
-                this.createBall();
-                console.log("WWASDSADAS2");
-    
-                this.createRackets();
-                console.log("WWASDSADAS3");
-    
-                this.createCamera();
-                console.log("WWASDSADAS4");
-    
-                this.createRenderer();
-                console.log("WWASDSADAS5");
-    
-                this.addLights();
-                console.log("WWASDSADAS6");
-    
-                this.addHelpers();
-                console.log("WWASDSADAS7");
-    
-                this.addEventListeners();
-                console.log("WWASDSADAS8");
-    
+                this.createBall();    
+                this.createRackets();    
+                this.createCamera();    
+                this.createRenderer();    
+                this.addLights();    
+                this.addHelpers();    
+                this.addEventListeners();    
                 this.gameBuild = true;
     
-                resolve();  // Resolve the Promise when everything is done
+                resolve();
             } catch (error) {
-                reject(error);  // If something fails, reject the Promise
+                reject(error);
             }
         });
     }
@@ -436,7 +423,7 @@ class GameApp {
     }
 
     // Method to reset or clean up variables
-    cleanUp(fullyEnded) {
+    cleanUp() {
         document.removeEventListener('keydown', this.onKeyDown.bind(this));
         document.removeEventListener('keyup', this.onKeyUp.bind(this));
         if (this.table) {
@@ -467,7 +454,6 @@ class GameApp {
             this.ball = null;
         }
 
-        // Dispose of lights if necessary
         if (this.ambientLight) {
             this.ambientLight = null;
         }
@@ -475,7 +461,6 @@ class GameApp {
             this.directionalLight = null;
         }
 
-        // Dispose of helpers if necessary
         if (this.gridHelper) {
             this.scene.remove(this.gridHelper);
             this.gridHelper = null;
@@ -485,7 +470,6 @@ class GameApp {
             this.axesHelper = null;
         }
 
-        // Dispose of camera and renderer
         if (this.camera) {
             this.camera = null;
         }
@@ -513,11 +497,6 @@ class GameApp {
             right: { up: false, down: false }
         };
         this.players = {};
-        if (fullyEnded === 1)
-        {
-            console.log("HWWWWWWWWWWWWWWWWWWWWW");
-            this.notifyGameComplete();
-        }
         this.gameSocket.close();
         this.gameSocket = null;
         this.assignedSide = null;
@@ -527,27 +506,10 @@ class GameApp {
         }
     }
 
-    notifyGameComplete() {
-        if (this.gameSocket && this.gameSocket.readyState === WebSocket.OPEN) {
-            try {
-                this.gameSocket.send(JSON.stringify({
-                    type: 'game_complete',
-                    game_status: 'completed'
-                }));
-            } catch (error) {
-                console.error("Failed to send game complete message:", error);
-            }
-        } else {
-            console.warn("WebSocket is not open. Cannot send game complete message.");
-        }
-    }
-
     handleGameOver(winner) {
         this.gameRunning = false;
         this.stopAnimation();
-        this.cleanUp(1);
-
-        // Display the winner
+        this.cleanUp();
         this.displayWinner(winner);
     }
 
@@ -569,8 +531,8 @@ class GameApp {
     async init(friendUsername) {
         try {
             console.log("EEEEEEEEEEEW");
-            await this.initGame();  // Wait for initGame to complete
-            console.log(this.gameBuild);  // This runs after initGame has resolved
+            await this.initGame();
+            console.log(this.gameBuild);
         } catch (error) {
             console.log("Error initializing game:", error);
             return;
@@ -584,7 +546,6 @@ class GameApp {
             console.log("Scene rendering is initialized.");
         }       
 
-        // Proceed with the rest of your code
         const scoreboard = document.createElement('div');
         scoreboard.innerHTML = `
         <div id="scoreboard">
