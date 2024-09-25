@@ -1,0 +1,154 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-10 12:11+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+#: spa_app/static/templates/404.html:9
+msgid "405 Method Not Allowed"
+msgstr ""
+
+#: spa_app/static/templates/404.html:11
+msgid ""
+"The method requested is not allowed on the target resource/directory, or for "
+"the requesting client"
+msgstr ""
+
+#: spa_app/static/templates/home.html:5
+msgid "Social"
+msgstr ""
+
+#: spa_app/static/templates/home.html:7
+msgid "Friends"
+msgstr ""
+
+#: spa_app/static/templates/home.html:8
+msgid "Requests"
+msgstr ""
+
+#: spa_app/static/templates/home.html:13 spa_app/static/templates/home.html:24
+msgid "Add Friend"
+msgstr ""
+
+#: spa_app/static/templates/home.html:23
+msgid "Enter friend\\"
+msgstr ""
+
+#: spa_app/static/templates/home.html:37
+msgid "Statistics"
+msgstr ""
+
+#: spa_app/static/templates/home.html:39
+msgid "Play"
+msgstr ""
+
+#: spa_app/static/templates/home.html:40
+#: spa_app/static/templates/profile.html:5
+msgid "History"
+msgstr ""
+
+#: spa_app/static/templates/home.html:48 spa_app/static/templates/home.html:56
+#: spa_app/static/templates/profile.html:13
+msgid "Online"
+msgstr ""
+
+#: spa_app/static/templates/home.html:61
+msgid "Offline"
+msgstr ""
+
+#: spa_app/static/templates/home.html:69
+msgid "Edit Profile"
+msgstr ""
+
+#: spa_app/static/templates/home.html:76
+msgid "Status"
+msgstr ""
+
+#: spa_app/static/templates/home.html:85
+msgid "Start Game"
+msgstr ""
+
+#: spa_app/static/templates/home.html:86
+msgid "End Game"
+msgstr ""
+
+#: spa_app/static/templates/login.html:3
+#: spa_app/static/templates/password_reset.html:4
+#: spa_app/static/templates/set_new_password.html:3
+#: spa_app/static/templates/signup.html:3
+msgid "Game Logo"
+msgstr ""
+
+#: spa_app/static/templates/login.html:7
+#: spa_app/static/templates/password_reset.html:7
+#: spa_app/static/templates/signup.html:6
+msgid "Username"
+msgstr ""
+
+#: spa_app/static/templates/login.html:8 spa_app/static/templates/signup.html:8
+msgid "Password"
+msgstr ""
+
+#: spa_app/static/templates/login.html:9
+msgid "Login"
+msgstr ""
+
+#: spa_app/static/templates/login.html:10
+msgid "Forgot your Password?"
+msgstr ""
+
+#: spa_app/static/templates/login.html:14
+msgid "Don't have an Account?"
+msgstr ""
+
+#: spa_app/static/templates/login.html:14
+#: spa_app/static/templates/signup.html:9
+msgid "Sign Up"
+msgstr ""
+
+#: spa_app/static/templates/login.html:16
+msgid "Login with 42"
+msgstr ""
+
+#: spa_app/static/templates/password_reset.html:2
+msgid "Main Page"
+msgstr ""
+
+#: spa_app/static/templates/password_reset.html:8
+#: spa_app/static/templates/signup.html:7
+msgid "Email"
+msgstr ""
+
+#: spa_app/static/templates/password_reset.html:9
+#: spa_app/static/templates/set_new_password.html:9
+msgid "Reset"
+msgstr ""
+
+#: spa_app/static/templates/profile.html:22
+msgid "Player Avatar"
+msgstr ""
+
+#: spa_app/static/templates/set_new_password.html:7
+msgid "New Password"
+msgstr ""
+
+#: spa_app/static/templates/set_new_password.html:8
+msgid "Confirm Password"
+msgstr ""
+
+#: spa_app/templates/base.html:13
+msgid "Base"
+msgstr ""

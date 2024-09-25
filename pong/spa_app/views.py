@@ -569,6 +569,8 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         response = JsonResponse({'success': True}, status=200)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
         return response
 
 @method_decorator(login_required, name='dispatch')
@@ -611,6 +613,9 @@ class OAuthConfigView(View):
             'auth_url': settings.FORTYTWO_AUTH_URL
         })
 
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import login as auth_login
+
 @method_decorator(csrf_exempt, name='dispatch')
 class Auth42CallbackView(View):
     def get(self, request, *args, **kwargs):
@@ -618,6 +623,7 @@ class Auth42CallbackView(View):
         if not code:
             return redirect(f"/#login?error='Authorization Failed'")
         try:
+            # Exchange code for access token
             token_url = settings.FORTYTWO_URL_TOKEN
             token_data = {
                 'grant_type': 'authorization_code',
@@ -636,6 +642,7 @@ class Auth42CallbackView(View):
             if not access_token:
                 return redirect(f"/#login?error='Invalid Token'")
 
+            # Get user info from OAuth provider
             user_info_url = settings.FORTYTWO_URL_INFO
             headers = {'Authorization': f'Bearer {access_token}'}
             user_response = requests.get(user_info_url, headers=headers)
@@ -645,15 +652,14 @@ class Auth42CallbackView(View):
 
             user_data = user_response.json()
 
+            # Sanitize and get username and email
             username = self.sanitize_username(user_data.get('login'))
             email = self.sanitize_email(user_data.get('email'))
             request.session['access_token'] = access_token
 
             user = User.objects.filter(email=email).first()
 
-            if user:
-                pass
-            else:
+            if not user:
                 original_username = username
                 count = 1
 
@@ -667,44 +673,35 @@ class Auth42CallbackView(View):
             auth_login(request, user)
             refresh = RefreshToken.for_user(user)
 
-            response = JsonResponse({'success': True})
+            response = redirect('/#home')
 
-            access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
-            refresh_token_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
-
-            access_token_expiry = timezone.now() + access_token_lifetime
-            refresh_token_expiry = timezone.now() + refresh_token_lifetime
-
-            print(access_token_lifetime)
-            print(refresh_token_lifetime)
-
-            print(access_token_expiry)
-            print(refresh_token_expiry)
+            access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
+            refresh_token_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()
 
             response.set_cookie(
                 'access_token',
                 str(refresh.access_token),
                 httponly=True,
                 secure=True,
-                samesite='Lax',
-                expires=access_token_expiry
+                samesite='Strict',
+                max_age=access_token_lifetime
             )
             response.set_cookie(
                 'refresh_token',
                 str(refresh),
                 httponly=True,
                 secure=True,
-                samesite='Lax',
-                expires=refresh_token_expiry
+                samesite='Strict',
+                max_age=refresh_token_lifetime
             )
 
+            return response
+
         except requests.RequestException:
-            return redirect(f"/#login?error='message': 'Internal Error'")
+            return redirect(f"/#login?error='Internal Error'")
         
         except ValidationError:
             return redirect(f"/#login?error='Data Validation Failed'")
-
-        return redirect('/#home')
 
     def sanitize_username(self, username):
         """
