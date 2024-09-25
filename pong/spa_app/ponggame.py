@@ -157,7 +157,7 @@ class Game:
             except Exception as e:
                 print(f"Exception in game loop: {e}")
                 break 
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.008)
 
     def update_game_state(self):
         print("Updating game state:", {
