@@ -1,91 +1,13 @@
-check if one of the users disconnects game is not stoping
-check game again
-Implement pause in local game ( IMPLEMENTED NEED TO CHECK WELL)
-
-
-remote game fix
-
-!!!!CHECK_COLLISIONS MAYBE CHANGE A BIT (WITH RACKET I THINK)
-
-
-disable 2fa
-mb change classlist in 2fa
-
-
-
-
-add JWT for enabling 2FA and protect it
-
-
-Modules: 7.5
 
 • Major module: Use a Framework as backend.
 • Minor module: Use a front-end framework or toolkit.
 • Minor module: Use a database for the backend -and more
 • Major module: Standard user management, authentication, users across tournaments.
-• Major module: Implementing a remote authentication.
-42 API: (working creating id if user exist in the db)
+• Major module: Implementing a remote authentication. 42 API: (working creating id if user exist in the db)
 • Major module: Remote players
 • Major module: Live Chat
 • Major module: Implementing Advanced 3D Techniques
-• Major module: Implementing a remote authentication.(on freeze cant get key to access)
-42 API (partially done)
-
-Minor module: Expanding Browser Compatibility.
-
-
-• Minor module: User and Game Stats Dashboards
-
-
-
-
-
-to check if pass hashed
-SELECT * FROM auth_user WHERE username='';
-
-
-
-
-
-
-
-
-
-Maybe I can add easy:
-
 • Major module: Implement Two-Factor Authentication (2FA) and JWT
-• Minor module: Game Customization Options.
-• Minor module: Expanding Browser Compatibility
-Minor module: Multiple language supports
-Minor module: Support on all devices.
-Minor module: Add accessibility for Visually Impaired Users
+• Minor module: Expanding Browser Compatibility.
+• Minor module: Add accessibility for Visually Impaired Users
 
-
-Minor module: Monitoring system
-
-MB hard but mostly done:
-
-
-• Major module: Replacing Basic Pong with Server-Side Pong and Implementing
-an API.
-<<<<<<< HEAD
-=======
-
-• Major module: Implementing a remote authentication.(on freeze cant get key to access)
-42 API:
-
-
-
-If you've already implemented SSL (which means you're using HTTPS), 
-you're actually already using TLS. SSL is the predecessor to TLS,
-and in modern applications, TLS has replaced SSL,
-but people often still refer to it as 
-"SSL" even though they're using TLS.
-
-
-Django uses SHA256 as the hash function PBKDF2
-
-
-
-
->>>>>>> backend_game
