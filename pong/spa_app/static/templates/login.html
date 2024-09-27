@@ -5,6 +5,8 @@
         <form method="post" action="/login/" class="form-login" id="loginForm">
             <input type="text" id="username" name="username" placeholder="Username" required minlength="5" maxlength="20" class="form-control form-control-lg mb-2">
             <input type="password" id="password" name="password" placeholder="Password" required minlength="6" maxlength="20" class="form-control form-control-lg mb-2">
+            <input type="text" id="inputextra" name="inputextra" placeholder="2FA CODE" class="form-control form-control-lg mb-2" style="display:none;">
+            <button type="button" class="btn btn-primary btn-lg btn-block" id="submit2fa" style="display:none;">Submit 2FA</button>
             <button type="submit" class="btn btn-primary btn-lg btn-block">Login</button>
             <a href="#passreset" id="forgot-password" class="d-block text-decoration-none mt-2">Forgot your Password?</a>
         </form>        

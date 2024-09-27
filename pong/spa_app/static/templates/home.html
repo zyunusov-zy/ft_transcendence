@@ -120,11 +120,27 @@
                     <label for="avatar">Avatar</label>
                     <input type="file" id="avatar" name="avatar" class="form-control">
                 </div>
+    
+                <div class="form-group switch-group">
+                    <label for="toggleInput">Enable/Disable 2FA</label>
+                    <button id="toggleBtn" class="toggle-btn disabled">Disable</button>
+                </div>
+    
+                <div class="form-group" id="extraInputField">
+                    <label for="extraInput">2FA</label>
+                    <input type="text" id="extraInput" name="extraInput" class="form-control">
+                </div>
+    
+                <div id="submitExtraInput">
+                    <button type="submit" class="btn btn-secondary">Submit 2FA</button>
+                </div>
+    
                 <button type="submit" class="btn btn-primary">Save Changes</button>
             </form>
             <div id="error-message" class="text-danger mt-2"></div>
         </div>
     </div>
+    
     
 
     <div id="opponentFormContainer" style="display: none;">

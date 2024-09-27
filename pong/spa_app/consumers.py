@@ -531,9 +531,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             side = data['side']
             keyState = data['keyState']
             if side == 'left':
-                self.game.left_racket_position[2] = racket_position['z']
+                self.game.left_racket_position[2] = racket_position['z'] + 5
             elif side == 'right':
-                self.game.right_racket_position[2] = racket_position['z']
+                self.game.right_racket_position[2] = racket_position['z'] + 5
 
             await self.send_game_state_mov(side, keyState)
 
@@ -668,7 +668,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             message = event['message']
             await self.send(text_data=json.dumps(message))
-        except Disconnected:
+        except Exception as event:
             print(f"WebSocket is already disconnected, cannot send message.{event}")
 
 

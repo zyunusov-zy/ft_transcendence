@@ -122,6 +122,7 @@ const LocationHandler = async () => {
                 console.log(editProfileBtn);
                 if (editProfileBtn) {
                     editProfileBtn.addEventListener('click', () => {
+                        check2faStatus();
                         showEditProfileModal();
                         console.log("CLICKED");
                     });
@@ -151,6 +152,40 @@ const LocationHandler = async () => {
         console.error('Error loading content:', error);
         document.getElementById("content").innerHTML = '<h1>Error loading page</h1>';
         document.title = 'Error';
+    }
+
+    function check2faStatus() {
+        const toggleBtn = document.getElementById('toggleBtn');
+        const extraInputField = document.getElementById('extraInputField');
+        const submitExtraInput = document.getElementById('submitExtraInput');
+
+        fetch('/get-2fa-status/', {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("FETTTTTTCHHHHHHH");
+                if (data.is_enabled) {
+                    toggleBtn.classList.remove('disabled');
+                    toggleBtn.classList.add('enabled');
+                    toggleBtn.textContent = 'Disable';
+
+                } else {
+                    toggleBtn.classList.remove('enabled');
+                    toggleBtn.classList.add('disabled');
+                    toggleBtn.textContent = 'Enable';
+                }
+            } else {
+                console.error('Error fetching 2FA status');
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+        });
     }
 };
 

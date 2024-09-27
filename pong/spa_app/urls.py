@@ -44,7 +44,15 @@ from .views import (
     # 42OAuth
     OAuthConfigView,
     Auth42CallbackView,
-    TokenRefreshView
+    TokenRefreshView,
+
+    # 2FA
+    Verify2FAView,
+    Enable2FAView,
+    Verify2FALView,
+    Get2FAStatusView,
+    RequestDisable2FACodeView, 
+    VerifyDisable2FAView
 )
 
 
@@ -80,4 +88,10 @@ urlpatterns = [
     path('auth42/', Auth42CallbackView.as_view(), name='auth42_callback'),
     path('api/check-block-status/<str:username>/', CheckBlockStatusView.as_view(), name='check_block_status'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('enable-2fa/', Enable2FAView.as_view(), name='enable_2fa'),
+    path('verify-2fa/', Verify2FAView.as_view(), name='verify_2fa'),
+    path('verify-2fal/', Verify2FALView.as_view(), name='verify_2fal'),
+    path('get-2fa-status/', Get2FAStatusView.as_view(), name='get_2fa_status'),
+    path('request-disable-2fa-code/', RequestDisable2FACodeView.as_view(), name='request_disable_2fa_code'),
+    path('verify-disable-2fa/', VerifyDisable2FAView.as_view(), name='verify_disable_2fa'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

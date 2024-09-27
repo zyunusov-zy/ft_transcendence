@@ -8,6 +8,15 @@ remote game fix
 !!!!CHECK_COLLISIONS MAYBE CHANGE A BIT (WITH RACKET I THINK)
 
 
+disable 2fa
+mb change classlist in 2fa
+
+
+
+
+add JWT for enabling 2FA and protect it
+
+
 Modules: 7.5
 
 • Major module: Use a Framework as backend.
