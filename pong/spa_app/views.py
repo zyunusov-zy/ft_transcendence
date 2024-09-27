@@ -32,6 +32,9 @@ import requests
 from django.core.exceptions import ValidationError
 from django.utils.http import urlencode
 from django.utils.html import escape
+import random
+from datetime import timedelta
+from django.utils import timezone
 
 class BaseTemplateView(View):
     template_name = 'base.html'
@@ -40,10 +43,153 @@ class BaseTemplateView(View):
         context = kwargs.get('context', {})
         return render(request, self.template_name, context)
 
+class Enable2FAView(View):
+    def post(self, request):
+        user = request.user
+        user_profile = UserProfile.objects.get(user=user)
+
+        try:
+            code = str(random.randint(100000, 999999))
+            user_profile.email_2fa_code = code
+            user_profile.email_2fa_code_expiry = timezone.now() + timedelta(minutes=5)
+            user_profile.save()
+
+            print(f"Generated 2FA code: {code}")
+
+            send_mail(
+                'Your 2FA Code',
+                f'Your verification code is {code}. It will expire in 5 minutes.',
+                'pong42',
+                [user.email],
+                fail_silently=False,
+            )
+
+            return JsonResponse({'success': True, 'message': '2FA code sent to your email.'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'errors': f'Error sending 2FA code: {str(e)}'})
+
+class Get2FAStatusView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        user_profile = UserProfile.objects.get(user=request.user)
+
+        is_enabled = user_profile.is_2fa_enabled
+
+        return JsonResponse({
+            'success': True,
+            'is_enabled': is_enabled
+        })
+
+class Verify2FAView(View):
+    def post(self, request):
+        user = request.user
+        user_profile = UserProfile.objects.get(user=user)
+
+        try:
+            data = json.loads(request.body)
+            code = data.get('code')
+
+            code = code.strip() if code else ""
+
+            print(f"Received code: {code}")
+            print(f"Stored code: {user_profile.email_2fa_code}")
+            print(f"Code expiry: {user_profile.email_2fa_code_expiry}")
+
+            if user_profile.email_2fa_code == code and timezone.now() < user_profile.email_2fa_code_expiry:
+                user_profile.is_2fa_enabled = True
+                user_profile.email_2fa_code = None
+                user_profile.email_2fa_code_expiry = None
+                user_profile.save()
+
+                return JsonResponse({'success': True, 'message': '2FA enabled successfully.'})
+            else:
+                return JsonResponse({'success': False, 'errors': 'Invalid or expired 2FA code.'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': 'Invalid JSON format.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'errors': f'Error verifying 2FA code: {str(e)}'})
+
 @method_decorator(login_required, name='dispatch')
 class CheckAuthenticationView(View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({'authenticated': True})
+
+class Verify2FALView(View):
+    @method_decorator(csrf_exempt)
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+            code = data.get('code')
+
+            user = authenticate(username=username, password=password)
+            if user is None:
+                return JsonResponse({'success': False, 'errors': 'Invalid username or password.'}, status=400)
+
+            user_profile = UserProfile.objects.get(user=user)
+            if user_profile.is_2fa_enabled:
+                if user_profile.verify_2fa_code(code):
+                    auth_login(request, user)
+                    return JsonResponse({'success': True, 'message': '2FA verification successful!'})
+                else:
+                    return JsonResponse({'success': False, 'errors': 'Invalid or expired 2FA code.'}, status=400)
+            else:
+                login(request, user)
+                return JsonResponse({'success': True, 'message': 'Login successful!'})
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'success': False, 'errors': 'User profile does not exist.'}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': 'Invalid JSON format.'}, status=400)
+
+class RequestDisable2FACodeView(View):
+    def post(self, request):
+        user = request.user
+        user_profile = UserProfile.objects.get(user=user)
+
+        try:
+            code = str(random.randint(100000, 999999))
+            user_profile.email_2fa_code = code
+            user_profile.email_2fa_code_expiry = timezone.now() + timedelta(minutes=5)
+            user_profile.save()
+
+            send_mail(
+                'Your 2FA Disable Code',
+                f'Your verification code for disabling 2FA is {code}. It will expire in 5 minutes.',
+                'no-reply@example.com',
+                [user.email],
+                fail_silently=False,
+            )
+
+            return JsonResponse({'success': True, 'message': '2FA disable code sent to your email.'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'errors': f'Error sending disable 2FA code: {str(e)}'})
+
+class VerifyDisable2FAView(View):
+    def post(self, request):
+        user = request.user
+        user_profile = UserProfile.objects.get(user=user)
+
+        try:
+            data = json.loads(request.body)
+            code = data.get('code')
+
+            if code and user_profile.email_2fa_code == code and timezone.now() < user_profile.email_2fa_code_expiry:
+                user_profile.is_2fa_enabled = False
+                user_profile.email_2fa_code = None
+                user_profile.email_2fa_code_expiry = None
+                user_profile.save()
+
+                return JsonResponse({'success': True, 'message': '2FA has been disabled.'})
+            else:
+                return JsonResponse({'success': False, 'errors': 'Invalid or expired 2FA code.'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': 'Invalid JSON format.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'errors': f'Error disabling 2FA: {str(e)}'})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(View):
@@ -63,19 +209,45 @@ class LoginView(View):
                 except UserProfile.DoesNotExist:
                     profile = None
 
-                if profile and profile.email_verified:
-                    auth_login(request, user)
+                if profile and profile.is_2fa_enabled:
+                    self.send_2fa_code(profile)
+                    return JsonResponse({
+                        'success': False,
+                        'requires_2fa': True,
+                        'message': '2FA is enabled. Enter the code sent to your email.'
+                    })
 
-                    response = JsonResponse({'success': True})
-                    return response
+                elif profile and profile.email_verified:
+                    auth_login(request, user)
+                    return JsonResponse({'success': True, 'message': 'Login successful.'})
+
                 elif profile and not profile.email_verified:
-                    return JsonResponse({'success': False, 'errors': 'Your email is not verified. Please check your email to activate your account.'})
+                    return JsonResponse({
+                        'success': False,
+                        'errors': 'Your email is not verified. Please check your email to activate your account.'
+                    })
+
                 else:
                     return JsonResponse({'success': False, 'errors': 'Error logging in. Please contact support for assistance.'})
             else:
                 return JsonResponse({'success': False, 'errors': 'Your account is inactive. Please contact support for assistance.'})
+
         else:
             return JsonResponse({'success': False, 'errors': 'Invalid username or password'})
+
+    def send_2fa_code(self, profile):
+        code = str(random.randint(100000, 999999))
+        profile.email_2fa_code = code
+        profile.email_2fa_code_expiry = timezone.now() + timedelta(minutes=5)
+        profile.save()
+
+        send_mail(
+            'Your 2FA Code',
+            f'Your verification code is {code}. It will expire in 5 minutes.',
+            'pong42',
+            [profile.user.email],
+            fail_silently=False,
+        )
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SignupView(View):
@@ -112,7 +284,7 @@ class SignupView(View):
             send_mail(
                 'Verify your email for our awesome site',
                 f'Please click the following link to verify your email address: {verification_link}',
-                'pon42', 
+                'pong42', 
                 [email],
                 fail_silently=False,
             )
@@ -188,7 +360,7 @@ class PasswordResetView(View):
             send_mail(
                 'Password Reset',
                 f'Click the link to reset your password: {reset_url}',
-                'no-reply@example.com',
+                'pong42',
                 [email],
                 fail_silently=False,
             )

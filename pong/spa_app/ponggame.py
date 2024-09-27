@@ -93,11 +93,18 @@ class Game:
             await self.reset_ball('right')
 
     def handle_racket_collision(self, is_right=False):
-        distance_from_center_z = abs(self.ball_position[2] - (self.right_racket_position[2] if is_right else self.left_racket_position[2]))
-        is_near_edge_z = distance_from_center_z >= (self.racket_d / 2) - self.edge_tolerance
+        # distance_from_center_z = abs(self.ball_position[2] - (self.right_racket_position[2] if is_right else self.left_racket_position[2]))
+        # is_near_edge_z = distance_from_center_z >= (self.racket_d / 2) - self.edge_tolerance
 
-        if is_near_edge_z:
-            self.ball_velocity[2] += (random.random() - 0.5) * 0.4
+        # if is_near_edge_z:
+        #     self.ball_velocity[2] += (random.random() - 0.5) * 0.4
+
+        racket_position = self.right_racket_position if is_right else self.left_racket_position
+        distance_from_center_z = self.ball_position[2] - racket_position[2]
+        impact_factor_z = distance_from_center_z / (self.racket_d / 2)
+
+
+        self.ball_velocity[2] += impact_factor_z * 0.4 
 
         if abs(self.ball_velocity[0]) < self.min_velocity:
             self.ball_velocity[0] = -self.min_velocity if self.ball_velocity[0] < 0 else self.min_velocity

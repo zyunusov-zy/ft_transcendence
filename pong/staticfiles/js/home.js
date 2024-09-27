@@ -430,9 +430,151 @@ function initializeHome() {
     document.getElementById('closePlayerFormModalBtn').addEventListener('click', () => {
         tournament.closeModal('playerFormModal');
     });
+
+
+    const toggleBtn = document.getElementById('toggleBtn');
+    const extraInputField = document.getElementById('extraInputField');
+    const submitExtraInput = document.getElementById('submitExtraInput');
+    const messageDiv = document.getElementById('error-message');
+
+    if (!toggleBtn || !extraInputField || !submitExtraInput) return;
+
+    toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+    
+        if (toggleBtn.classList.contains('disabled')) {
+            toggleBtn.classList.remove('disabled');
+            toggleBtn.classList.add('enabled');
+            toggleBtn.textContent = 'Disable';
+    
+            fetch2fa(extraInputField, submitExtraInput);
+        } else {
+            toggleBtn.classList.remove('enabled');
+            toggleBtn.classList.add('disabled');
+            toggleBtn.textContent = 'Enable'; 
+            
+            fetchDisable2fa(extraInputField, submitExtraInput);
+        }
+    });
     
     Status();
     loadFriends();
+}
+
+
+function fetch2fa(extraInputField, submitExtraInput)
+{
+    const messageDiv = document.getElementById('error-message');
+
+    fetch('/enable-2fa/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ enable_2fa: true }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            extraInputField.style.display = 'block';
+            submitExtraInput.style.display = 'block';
+            messageDiv.textContent = '2FA code sent to your email!';
+        } else {
+            messageDiv.textContent = 'Error sending 2FA code. Please try again.';
+        }
+    });
+
+    const extraIn = document.getElementById('extraInput');
+    submitExtraInput.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log(extraIn);
+        
+        const code = extraIn.value.trim(); 
+        
+        if (!code) {
+            messageDiv.textContent = 'Please enter the 2FA code.';
+            return;
+        }
+    
+        fetch('/verify-2fa/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ code: code }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.textContent = '2FA enabled successfully!';
+            } else {
+                messageDiv.textContent = 'Invalid or expired code. Please try again.';
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            messageDiv.textContent = 'Error verifying the 2FA code. Please try again.';
+        });
+    });
+}
+
+function fetchDisable2fa(extraInputField, submitExtraInput) {
+    const messageDiv = document.getElementById('error-message');
+
+    fetch('/request-disable-2fa-code/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageDiv.textContent = '2FA disable code sent to your email!';
+        } else {
+            messageDiv.textContent = 'Error sending 2FA disable code. Please try again.';
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        messageDiv.textContent = 'Error sending the disable 2FA code. Please try again.';
+    });
+
+    const extraIn = document.getElementById('extraInput');
+    submitExtraInput.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        const code = extraIn.value.trim();
+
+        if (!code) {
+            messageDiv.textContent = 'Please enter the 2FA disable code.';
+            return;
+        }
+
+        fetch('/verify-disable-2fa/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ code: code }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.textContent = '2FA has been disabled successfully!';
+            } else {
+                messageDiv.textContent = 'Invalid or expired code. Please try again.';
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            messageDiv.textContent = 'Error verifying the disable 2FA code. Please try again.';
+        });
+    });
 }
 
 

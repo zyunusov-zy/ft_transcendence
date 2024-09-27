@@ -668,7 +668,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         try:
             message = event['message']
             await self.send(text_data=json.dumps(message))
-        except Disconnected:
+        except Exception as event:
             print(f"WebSocket is already disconnected, cannot send message.{event}")
 
 

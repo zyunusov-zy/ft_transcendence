@@ -384,7 +384,7 @@ class GameApp {
                     this.racket.translateZ(5);
                     // console.log('Moving left racket down:', racket.position.z);
                 }
-                
+                this.sendMovement(this.keyState[this.assignedSide]);
             } else if (this.assignedSide === 'right') {
                 // console.log(keyState);
                 if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
@@ -406,6 +406,7 @@ class GameApp {
                     this.racket.position.z += 5;
                     // console.log('Moving left racket down:', racket.position.z);
                 }
+                this.sendMovement(this.keyState[this.assignedSide]);
             }
         } catch (error) {
             console.log("Error in move rackets:", error);
