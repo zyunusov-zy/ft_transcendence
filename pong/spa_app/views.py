@@ -90,7 +90,6 @@ class Enable2FAView(View):
             user_profile.email_2fa_code_expiry = timezone.now() + timedelta(minutes=5)
             user_profile.save()
 
-            print(f"Generated 2FA code: {code}")
 
             send_mail(
                 'Your 2FA Code',
@@ -127,9 +126,6 @@ class Verify2FAView(View):
 
             code = code.strip() if code else ""
 
-            print(f"Received code: {code}")
-            print(f"Stored code: {user_profile.email_2fa_code}")
-            print(f"Code expiry: {user_profile.email_2fa_code_expiry}")
 
             if user_profile.email_2fa_code == code and timezone.now() < user_profile.email_2fa_code_expiry:
                 user_profile.is_2fa_enabled = True
@@ -178,11 +174,7 @@ class Verify2FALView(View):
                     access_token_expiry = timezone.now() + access_token_lifetime
                     refresh_token_expiry = timezone.now() + refresh_token_lifetime
 
-                    print(access_token_lifetime)
-                    print(refresh_token_lifetime)
 
-                    print(access_token_expiry)
-                    print(refresh_token_expiry)
 
                     response.set_cookie(
                         'access_token',
@@ -298,11 +290,7 @@ class LoginView(View):
                     access_token_expiry = timezone.now() + access_token_lifetime
                     refresh_token_expiry = timezone.now() + refresh_token_lifetime
 
-                    print(access_token_lifetime)
-                    print(refresh_token_lifetime)
 
-                    print(access_token_expiry)
-                    print(refresh_token_expiry)
 
                     response.set_cookie(
                         'access_token',
@@ -507,7 +495,6 @@ class SetNewPasswordView(View):
 class ValidateTokenView(View):
     def get(self, request, *args, **kwargs):
         token = request.GET.get('token')
-        print(token)
         if not token:
             return JsonResponse({'valid': False, 'error': 'No token provided'})
 
@@ -553,9 +540,7 @@ class SendFriendRequestView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            print(f"Request body: {data}")
             to_user_username = data.get('to_user_username')
-            print(f"Username received: {to_user_username}")
 
             if not to_user_username:
                 return JsonResponse({'success': False, 'message': 'Username not provided.'})
@@ -650,7 +635,6 @@ class UpdateStatusView(View):
                 profile.save()
 
                 update_status_and_notify_friends(user, status)
-                print(profile.status)
                 return JsonResponse({'status': 'success', 'message': 'Status updated successfully'})
             else:
                 return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=401)
@@ -663,7 +647,6 @@ class UpdateStatusView(View):
 class MessagesListView(View):
     @jwt_required
     def get(self, request, username):
-        print("HERE!!!!!!!!!!")
         user = request.user
         other_user = get_object_or_404(User, username=username)
 
@@ -694,7 +677,6 @@ class CheckBlockStatusView(View):
         other_user = get_object_or_404(User, username=username)
 
         has_blocked = Block.objects.filter(blocker=current_user, blocked=other_user).exists()
-        print(f" IS IT BLOCKED: {has_blocked}")
         return JsonResponse({
             'hasBlocked': has_blocked,
         })
@@ -704,7 +686,6 @@ class SendMessageView(View):
     @jwt_required
     def post(self, request):
         try:
-            print("Entered the post method")
             data = json.loads(request.body)
             recipient_username = data.get('recipient_username')
             content = data.get('content')
@@ -714,7 +695,6 @@ class SendMessageView(View):
 
             message = Message.objects.create(sender=sender, receiver=recipient, content=content)
             message_id = message.id
-            print(f"Message created: {message_id}")
 
             channel_layer = get_channel_layer()
             room_group_name = f'chat_{recipient_username}'
@@ -737,7 +717,6 @@ class SendMessageView(View):
             return JsonResponse({'error': 'Recipient user not found.'}, status=404)
 
         except Exception as e:
-            print(f"Exception: {e}")
             return JsonResponse({'error': 'Internal server error.'}, status=500)
 
 

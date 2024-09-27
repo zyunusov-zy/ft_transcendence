@@ -59,7 +59,7 @@ class Game:
 
             await self.check_collision()
         except Exception as e:
-            print(f"Error in move_ball: {e}")
+            print(f"{e}")
 
     async def check_collision(self):
         now = time.time()
@@ -117,7 +117,6 @@ class Game:
         self.score_update_callback = callback
     
     async def reset_ball(self, side_to_inc):
-        print("RESET CALL?")
         self.ball_position = [0, self.table_h / 2 + 7, -(self.table_d / 4)]
         speed = 5
         direction_x = random.choice([-1, 1])
@@ -148,7 +147,6 @@ class Game:
             try:
                 await self.move_ball()
                 if self.score['left'] >= 5 or self.score['right'] >= 5:
-                    print("Game over! Reached score 5.")
                     self.game_running = False
                     if self.end_game_callback:
                         if self.score['left'] == 5:
@@ -162,16 +160,10 @@ class Game:
                     await self.update_callback()
 
             except Exception as e:
-                print(f"Exception in game loop: {e}")
                 break 
             await asyncio.sleep(0.008)
 
     def update_game_state(self):
-        print("Updating game state:", {
-            'velocity': self.ball_velocity,
-            'ball_position': self.ball_position,
-        })
-
         return {
             'velocity': self.ball_velocity,
             'ball_position': self.ball_position,
@@ -196,7 +188,6 @@ class Game:
         }
 
         self.ball_position = [0, self.table_h / 2 + 7, -(self.table_d / 4)]
-        print(f"RESETING BALL: {self.ball_position}")
         self.ball_velocity = [5, 0, 5]
         self.score = {'left': 0, 'right': 0}
         self.last_collision_time = 0

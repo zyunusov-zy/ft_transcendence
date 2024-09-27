@@ -12,7 +12,6 @@ class PlayerS {
 
 class GameAPPS {
 	constructor(name1, name2, tournament) {
-        console.log("Printitng names of the players: ", name1, name2);
         this.keyState = {
             w: false,
 			s: false,
@@ -201,22 +200,18 @@ class GameAPPS {
 	moveRackets() {
         if (this.keyState.w && this.racket.position.z > -390 && this.racket.position.z <= 90) {
 			this.racket.translateZ(-this.racketVelo); // Move the racket backward
-			// console.log('Rocket props while rendering W: ', racket.position);
 		}
 	
 		if (this.keyState.s && this.racket.position.z >= -390 && this.racket.position.z < 90) {
 			this.racket.translateZ(this.racketVelo); // Move the racket forward
-			// console.log('Rocket props while rendering S: ', racket.position);
 		}
 	
 		if (this.keyState.up && this.rRacket.position.z > -390 && this.rRacket.position.z <= 90) {
 			this.rRacket.translateZ(-this.racketVelo); // Move the right racket backward
-			// console.log('Right Racket props while rendering ArrowUp: ', rRacket.position);
 		}
 	
 		if (this.keyState.down && this.rRacket.position.z >= -390 && this.rRacket.position.z < 90) {
 			this.rRacket.translateZ(this.racketVelo); // Move the right racket forward
-			// console.log('Right Racket props while rendering ArrowDown: ', rRacket.position);
 		}
 	}
 
@@ -244,16 +239,12 @@ class GameAPPS {
         // When player scores
         if (this.ball.position.x + this.ballRadius > this.tableProp.maxX  - 10 && this.ballVelocity.x > 0) {
             // right
-            console.log("table: ", this.tableProp.maxX);
-            console.log(this.ball.position);
 			this.players.player1.increaseScore();
             this.updateScoreboard();
             this.resetBall('player1');
         }else if (this.ball.position.x - this.ballRadius < this.tableProp.minX + 10 && this.ballVelocity.x < 0) {
 
             // left
-            console.log("table: ", this.tableProp.minX);
-            console.log(this.ball.position.x);
             this.players.player2.increaseScore();
             this.updateScoreboard();
             this.resetBall('player2');
@@ -417,7 +408,6 @@ class GameAPPS {
         this.stopAnimation(); // Stop the animation loop
         
         this.winnerS = winner;
-        console.log("I am in the handleGameOver: ", this.winnerS);
         // Display the winner
         this.cleanUp(); // Clean up variables
         if ( this.tournament === 0)
@@ -425,7 +415,6 @@ class GameAPPS {
         else
             this.deleteThingsFromGame();
         if (this.gameOverCallback && this.tournament === 1) {
-            console.log("Handling game over, winner:", winner);
             this.gameOverCallback(winner);
             this.gameOverCallback = null;
         }
@@ -496,8 +485,6 @@ class GameAPPS {
         const player1Score = document.getElementById('player1-score');
         const player2Score = document.getElementById('player2-score');
         
-		console.log(this.players);
-		// console.log(this.players.player2.username);
         player1Name.textContent = this.players.player1.username;
         player2Name.textContent = this.players.player2.username;
         player1Score.textContent = this.players.player1.score;
@@ -530,7 +517,6 @@ class GameAPPS {
 
 	async init()
 	{
-        console.log("RUNNING INIT");
 		document.getElementById('gameCon').style.display = 'block';
         document.getElementById('sideBar').style.display = 'none';
         document.getElementById('mainPageHome').style.display = 'none';
@@ -562,10 +548,8 @@ class GameAPPS {
         document.getElementById('pauseButton').addEventListener('click', () => this.togglePause());
 
         if (this.tournament === 1) {
-            console.log("Setting up the promise for tournament game");
     
             return new Promise((resolve) => {
-                console.log("RESOLVE IN INIT: ", resolve);
                 this.gameOverCallback = resolve;
                 this.initGame();
             });

@@ -13,7 +13,6 @@ class Player {
 
 class GameApp {
 	constructor() {
-        console.log("HEHEHE");
         this.gameSocket = null;
         this.assignedSide = null;
 
@@ -83,7 +82,6 @@ class GameApp {
         this.gameSocket = new WebSocket(wsPath);
 
         this.gameSocket.onopen = () => {
-            console.log('Game WebSocket connection established');
         };
 
         this.gameSocket.onmessage = (e) => {
@@ -91,7 +89,6 @@ class GameApp {
 
             if (data.type === 'side_assignment') {
                 this.assignedSide = data.side;
-                console.log(`Side assigned: ${this.assignedSide}`);
                 this.players = {
                     left: new Player(data.players.left.username, 'left'),
                     right: new Player(data.players.right.username, 'right')
@@ -104,19 +101,14 @@ class GameApp {
             } else if (data.type === 'score_update') {
                 this.players.left.updateScore(data.players.left.score);
                 this.players.right.updateScore(data.players.right.score);
-                console.log(`Score update received: Player 1 (${this.players.left.username}) - ${this.players.left.score}, Player 2 (${this.players.right.username}) - ${this.players.right.score}`);
-                this.updateScoreboard();
+               this.updateScoreboard();
             } else if (data.type === 'game_over') {
-                console.log(`Game over. Winner: ${data.winner}`);
-                this.handleGameOver(data.winner);
+               this.handleGameOver(data.winner);
             } else if (data.type === 'game_cancelled'){
-                console.log("Here111111222222222:::", data.reason);
                 this.handleGameCancelled(data.reason);
             }else if (data.type === 'game_start') {
-                console.log("GOT GAME START: ", data);
                 this.startAnimation(); 
             }else if (data.type === 'request_ready') {
-                console.log("Player ready?????")
                 this.gameSocket.send(JSON.stringify({
                     type: 'player_ready'
                 }));
@@ -133,7 +125,6 @@ class GameApp {
     }
 
     startAnimation() {
-        console.log("GAME STARTED");
         this.gameRunning = true;
         this.animate();
     }
@@ -165,7 +156,6 @@ class GameApp {
 
 	handleOpponentMovement(data) {
         if (data.side !== this.assignedSide) {
-            console.log(`Handling opponent movement for side: ${data.side}`);
             if (data.side === 'left') {
                 this.keyState.left = data.keyState;
             } else {
@@ -189,9 +179,7 @@ class GameApp {
         player2Name.textContent = this.players.right.username;
         player1Score.textContent = this.players.left.score;
         player2Score.textContent = this.players.right.score;
-
-        console.log(`Scoreboard updated: Player 1 (${this.players.left.username}) - ${this.players.left.score}, Player 2 (${this.players.right.username}) - ${this.players.right.score}`);
-    }
+}
 
     displayWinner(winner) {
         const gameCon = document.getElementById('gameCon');
@@ -364,52 +352,35 @@ class GameApp {
 
         try {
             if (this.assignedSide === 'left') {
-                // console.log(keyState);
                 if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
-                    // console.log("CALLED1");
                     this.rRacket.position.z -= 5;
-                    // console.log('Moving right racket up:', rRacket.position.z);
                 }
                 if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
-                    // console.log("CALLED2");
                     this.rRacket.position.z += 5;
-                    // console.log('Moving right racket down:', rRacket.position.z);
                 }
-                // console.log("CALLED");
                 if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
                     this.racket.translateZ(-5);
-                    // console.log('Moving left racket up:', racket.position.z);
                 }
                 if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
                     this.racket.translateZ(5);
-                    // console.log('Moving left racket down:', racket.position.z);
                 }
                 this.sendMovement(this.keyState[this.assignedSide]);
             } else if (this.assignedSide === 'right') {
-                // console.log(keyState);
                 if (this.keyState.right.up && this.rRacket.position.z > -395 && this.rRacket.position.z <= 95) {
                     this.rRacket.translateZ(-5);
-                    // console.log('Moving right racket up:', rRacket.position.z);
                 }
                 if (this.keyState.right.down && this.rRacket.position.z >= -395 && this.rRacket.position.z < 95) {
                     this.rRacket.translateZ(5);
-                    // console.log('Moving right racket down:', rRacket.position.z);
                 }
-                // console.log("C");
                 if (this.keyState.left.up && this.racket.position.z > -395 && this.racket.position.z <= 95) {
-                    // console.log("C1");
                     this.racket.position.z -= 5;
-                    // console.log('Moving left racket up:', racket.position.z);
                 }
                 if (this.keyState.left.down && this.racket.position.z >= -395 && this.racket.position.z < 95) {
-                    // console.log("C2");
                     this.racket.position.z += 5;
-                    // console.log('Moving left racket down:', racket.position.z);
                 }
                 this.sendMovement(this.keyState[this.assignedSide]);
             }
         } catch (error) {
-            console.log("Error in move rackets:", error);
             return;
         }
         // Move the local player's racket
@@ -531,20 +502,14 @@ class GameApp {
 
     async init(friendUsername) {
         try {
-            console.log("EEEEEEEEEEEW");
             await this.initGame();
-            console.log(this.gameBuild);
         } catch (error) {
-            console.log("Error initializing game:", error);
             return;
         }
     
-
-        console.log("Checking if scene is rendering...");
         if (!this.scene) {
-            console.error("Scene was not created properly");
+            // console.error("Scene was not created properly");
         } else {
-            console.log("Scene rendering is initialized.");
         }       
 
         const scoreboard = document.createElement('div');
@@ -563,7 +528,6 @@ class GameApp {
         `;
         document.getElementById('gameCon').appendChild(scoreboard);
     
-        console.log(friendUsername);
         this.GameSocket(friendUsername);
     }
     

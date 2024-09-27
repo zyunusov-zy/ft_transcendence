@@ -20,12 +20,9 @@ const displayUserData = (data) => {
         const avatarElement = document.querySelector('img#avatar');
         
         if (nicknameElement && avatarElement) {
-            console.log(nicknameElement);
-            console.log(avatarElement);
             nicknameElement.textContent = data.nickname;
             avatarElement.src = data.avatar;
         } else {
-            console.log("Elements not found, retrying...");
             setTimeout(checkElements, 100);
         }
     };
@@ -53,7 +50,6 @@ function initializeHome() {
         }
     const globApp = new GlobApp();
     globApp.init();
-    console.log("I AM HERESSSS");
     addFriendLink.addEventListener('click', (event) => {
         event.preventDefault();
         overlay.style.display = 'block';
@@ -65,10 +61,8 @@ function initializeHome() {
 
     addFriendButton.addEventListener('click', async () => {
         const friendName = friendNameInput.value;
-        console.log('Friend name to be added:', friendName);
     
         const requestBody = JSON.stringify({ to_user_username: friendName });
-        console.log('Request body:', requestBody);
         
         await ensureValidAccessToken();
         // Send the request
@@ -84,7 +78,6 @@ function initializeHome() {
         // Log the response
         const responseClone = response.clone();
         const responseText = await responseClone.text();
-        console.log('Response body:', responseText);
     
         const result = await response.json();
         if (result.success) {
@@ -169,7 +162,6 @@ function initializeHome() {
         }
     
         const result = await response.json();
-        console.log(result);
         friendsBox.innerHTML = '';
         result.friends.forEach(friend => {
             const friendElem = document.createElement('div');
@@ -182,7 +174,6 @@ function initializeHome() {
             const statusIcon = document.createElement('span');
             statusIcon.classList.add('status-icon');
             
-            console.log(friend.status);
             if (friend.status === 'online') {
                 statusIcon.innerHTML = '<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--noto" preserveAspectRatio="xMidYMid meet" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><circle cx="63.93" cy="64" r="60" fill="#689f38"></circle><circle cx="60.03" cy="63.1" r="56.1" fill="#7cb342"></circle><path d="M23.93 29.7c4.5-7.1 14.1-13 24.1-14.8c2.5-.4 5-.6 7.1.2c1.6.6 2.9 2.1 2 3.8c-.7 1.4-2.6 2-4.1 2.5a44.64 44.64 0 0 0-23 17.4c-2 3-5 11.3-8.7 9.2c-3.9-2.3-3.1-9.5 2.6-18.3z" fill="#aed581"></path></g></svg>';
             } else if (friend.status === 'offline') {
@@ -197,7 +188,6 @@ function initializeHome() {
             chatIcon.innerHTML = '&#x1F4AC;';
             chatIcon.addEventListener('click', () => openChatBox(friend.username, globApp));
 
-            console.log(statusIcon);
             friendElem.appendChild(statusIcon);
             friendElem.appendChild(nickname);
             friendElem.appendChild(chatIcon);
@@ -208,7 +198,6 @@ function initializeHome() {
     async function handleAcceptRequest(requestId) {
         await ensureValidAccessToken();
 		const str = getCookie('csrftoken');
-		console.log(str);
         const response = await fetch(`/accept-friend-request/${requestId}/`, {
             method: 'POST',
             headers: {
@@ -245,7 +234,6 @@ function initializeHome() {
             alert(result.message);
         }
     }
-    console.log("BTEW HERE");
     // attachEventListeners();
     
     document.getElementById('friendsLink').addEventListener('click', (event) => {
@@ -297,14 +285,12 @@ function initializeHome() {
                 }
             })
             .then(data => {
-                console.log('Status updated successfully:', data);
             })
             .catch(error => {
                 console.error('Error updating status:', error);
             });
         }
 
-        console.log("HHHHHHHHHHHHHHHHHHHHHH");
         onlineButton.addEventListener('click', function(event) {
             event.preventDefault(); 
             statusSpan.innerHTML = 'Online';
@@ -365,7 +351,6 @@ function initializeHome() {
     
     document.getElementById('PlayWithFriendButton').addEventListener("click", function(event) {
         event.preventDefault();
-        console.log("AM I HERE AGAIN");
         fetchFriendsList(globApp);
         document.getElementById('popupContainer').style.display = 'flex';
 	    document.getElementById('overlayF').style.display = 'block';
@@ -502,7 +487,6 @@ function fetch2fa(extraInputField, submitExtraInput)
     const extraIn = document.getElementById('extraInput');
     submitExtraInput.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log(extraIn);
         
         const code = extraIn.value.trim(); 
         
@@ -619,9 +603,7 @@ function addBorderM(element)
 
 
 function attachEventListeners() {
-    console.log("HERE IN ATTACH");
     function showBox(boxToShow) {
-        console.log("HERE IN ATTACH1");
         const boxes = ['friends-box', 'chats-box', 'request-box'];
         boxes.forEach(box => {
             document.querySelector(`.${box}`).style.display = box === boxToShow ? 'flex' : 'none';

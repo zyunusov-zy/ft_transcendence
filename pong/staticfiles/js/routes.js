@@ -39,7 +39,6 @@ const getQueryParams = () => {
         params[key] = decodeURIComponent(value);
     });
 
-    console.log(params);
     return params;
 };
 
@@ -64,13 +63,11 @@ const isAuthenticated = async () => {
 
 // Function to handle the location
 const LocationHandler = async () => {
-    console.log("HERERERE");
     let url = window.location.hash;
     let locationEnd = url.indexOf('?') !== -1 ? url.indexOf('?') : url.length;
     let location = url.substring(url.indexOf('#') + 1, locationEnd);
     let queryParams = getQueryParams();
 
-	console.log("query:  ", queryParams);
     if (location.length === 0) {
         location = 'login';
     }
@@ -90,8 +87,6 @@ const LocationHandler = async () => {
     }
     const route = routes[location] || routes[404];
 
-    console.log("Location: ", location);
-    console.log("Route: " , route);
     try {
         const response = await fetch(route.template);
         if (!response.ok) {
@@ -108,38 +103,29 @@ const LocationHandler = async () => {
             document.title = route.title;
             attachFormSubmitHandler(location);
 
-            console.log(queryParams);
-            console.log(queryParams.verification);
             if (queryParams.verification) {
                 displayVerificationMessage(queryParams);
             }
 
             if (location === 'home') {
-                console.log("At Home");
                 fetchUserData();
                 const editProfileBtn = document.getElementById('editProfileBtn');
-                console.log("Button");
-                console.log(editProfileBtn);
                 if (editProfileBtn) {
                     editProfileBtn.addEventListener('click', () => {
                         check2faStatus();
                         showEditProfileModal();
-                        console.log("CLICKED");
                     });
                 }
                 initializeHome(); 
             }
 
             if (location === 'setnewpass') {
-                console.log("HERE");
-                console.log(queryParams.token);
                 if (queryParams.token) {
                     const isValid = await validateToken(queryParams.token);
                     if (!isValid) {
                         document.getElementById("content").innerHTML = '<h1>Invalid or expired token</h1>';
                         document.title = 'Error';
                     } else {
-                        console.log(location);
                         handleNewPassRes(queryParams.token);
                     }
                 } else {
@@ -168,7 +154,6 @@ const LocationHandler = async () => {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log("FETTTTTTCHHHHHHH");
                 if (data.is_enabled) {
                     toggleBtn.classList.remove('disabled');
                     toggleBtn.classList.add('enabled');
@@ -272,7 +257,6 @@ const handleNewPassRes = (token) => {
 
             const data = await response.json();
             if (data.success) {
-                console.log('Password reset successful');
                 window.location.href = '#login';
             } else {
                 displayMessage(data.error || 'Password reset failed.');
@@ -319,10 +303,8 @@ const validateToken = async (token) => {
 };
 
 const displayVerificationMessage = (queryParams) => {
-    console.log("HEEEElllloooo");
     const verification = queryParams['verification'];
     if (verification) {
-        console.log("HERE");
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('alert', 'alert-success', 'mt-1');
         messageDiv.style.padding = '8px';
@@ -341,8 +323,6 @@ const displayVerificationMessage = (queryParams) => {
 
     if (queryParams.error) {
             alert(`Error found: ${queryParams.error}`);
-        
-            console.log("Error found:", queryParams.error);
     }
 };
 

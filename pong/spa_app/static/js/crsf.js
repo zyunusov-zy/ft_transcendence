@@ -2,7 +2,6 @@ const getCookie = (name) => {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
-        console.log("COOOKIES: ", cookies);
         for (let i = 0; i < cookies.length; i++) {
             const cookie = cookies[i].trim();
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
@@ -23,7 +22,6 @@ const fetchCSRFToken = async () => {
         const response = await fetch('/fetch-csrf-token/');
         const data = await response.json();
         document.cookie = `csrftoken=${data.csrfToken}`;
-        console.log(`CSRF Token fetched: ${data.csrfToken}`);
     } catch (error) {
         console.error('Error fetching CSRF token:', error);
     }

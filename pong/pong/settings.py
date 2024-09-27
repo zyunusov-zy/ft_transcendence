@@ -28,7 +28,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 
-print(BASE_DIR)
 
 INSTALLED_APPS = [
     'daphne',
@@ -167,7 +166,6 @@ STATICFILES_DIRS = [
 CSRF_TRUSTED_ORIGINS = [
     os.environ.get('CSRF_TR_OR'),
 ]
-print("CSRF: ",os.environ.get('CSRF_TR_OR'))
 
 
 # Default primary key field type

@@ -13,7 +13,6 @@ const handleLogout = async (globApp) => {
 
         const data = await response.json();
         if (data.success) {
-            console.log('Logged out successfully');
             clearAuthData();
 			closeAllChatSockets();
 			globApp.clearS();

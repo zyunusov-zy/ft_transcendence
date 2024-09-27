@@ -7,4 +7,3 @@ websocket_urlpatterns = [
     re_path(r'^wss/game/(?P<username>\w+)/$', consumers.GameConsumer.as_asgi()),
 ]
 
-print("WebSocket URL patterns loaded")

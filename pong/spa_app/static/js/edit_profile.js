@@ -42,7 +42,6 @@ function showEditProfileModal() {
 
                 const data = await response.json();
                 if (data.success) {
-                    console.log('Profile updated successfully');
                     modal.style.display = 'none';
                     location.reload();
                 } else {

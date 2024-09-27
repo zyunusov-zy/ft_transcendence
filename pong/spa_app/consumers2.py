@@ -44,21 +44,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = ''.join(sorted([self.user, self.friend]))
         self.room_group_name = f'chat_{self.room_name}'
 
-        print(f"User {self.user} connecting to chat room: {self.room_name}")
 
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
         await self.accept()
-        print(f"User {self.user} connected to chat room: {self.room_group_name}")
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
-        print(f"User {self.user} disconnected from chat room: {self.room_group_name}")
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -66,7 +63,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_username = self.user
         receiver_username = self.friend
 
-        print(f"Received message from {sender_username} to {receiver_username}: {message}")
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -90,7 +86,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
         except Exception as e:
-            print(f"Error sending notification to user-specific channel: {e}")
 
 
 
@@ -99,11 +94,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender = event['sender']
         message_id = event['message_id']
 
-        print(f"Broadcasting message {message_id} from {sender}: {message}")
 
         await self.send(text_data=json.dumps({
             'message': message,
             'sender': sender,
             'message_id': message_id,
         }))
-        print(f"Message {message_id} sent to WebSocket from {sender}: {message}")

@@ -57,7 +57,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             # Use the user's ID to avoid issues with username changes
             self.group_name = sanitize_group_name(f"user_{self.user.id}")
 
-            print(f"User {self.user.id} connecting to user-specific channel {self.group_name}")
 
             await self.channel_layer.group_add(
                 self.group_name,
@@ -71,14 +70,11 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             # Notify friends about the user's online status
             await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'online')
             
-            print(f"User {self.user.id} accepted in user-specific channel {self.group_name}")
         else:
             await self.close()
-            print("User is not authenticated. Connection closed.")
 
     async def disconnect(self, close_code):
         if hasattr(self, 'group_name') and self.channel_name:
-            print(f"User {self.user.id} disconnecting from user-specific channel {self.group_name}")
 
             await self.channel_layer.group_discard(
                 self.group_name,
@@ -91,10 +87,8 @@ class GlobalConsumer(AsyncWebsocketConsumer):
             # Notify friends about the user's offline status
             await database_sync_to_async(update_status_and_notify_friends)(self.user_obj, 'offline')
             
-            print(f"User {self.user.id} removed from user-specific channel {self.group_name}")
         else:
-            print("Group name or channel name not found during disconnection.")
-
+            print("...")
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -103,7 +97,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         response = data.get('response')
         sender_id = self.user.id
 
-        print(f"GlobalConsumer: Received data: {data}")
 
         if receiver_username and game_request:
             if GlobalConsumer.is_game_in_progress:
@@ -111,7 +104,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                     'type': 'game_in_progress',
                     'message': 'Another game request is already in progress. Please wait.'
                 }))
-                print(f"GlobalConsumer: A game is already in progress. Request from user {sender_id} rejected.")
                 return
 
             GlobalConsumer.is_game_in_progress = True
@@ -120,24 +112,20 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                 receiver = await sync_to_async(User.objects.get)(username=receiver_username)
                 receiver_profile = await sync_to_async(UserProfile.objects.get)(user=receiver)
 
-                print(receiver_profile.status)
                 if receiver_profile.status == 'in_game':
                     await self.send(text_data=json.dumps({
                         'type': 'in_game',
                         'message': f'User {receiver_username} is currently in a game and cannot accept new requests.'
                     }))
-                    print(f"GlobalConsumer: User {receiver_username} is in a game. Request rejected.")
                 elif receiver_profile.status == 'offline':
                     await self.send(text_data=json.dumps({
                         'type': 'offline',
                         'message': f'User {receiver_username} is currently offline and cannot accept new requests.'
                     }))
-                    print(f"GlobalConsumer: User {receiver_username} is offline. Request rejected.")
                 else:
                     receiver_id = receiver.id
                     recipient_channel_name = sanitize_group_name(f"user_{receiver_id}")
                     
-                    print(f"GlobalConsumer: Sending game request from user {sender_id} to user {receiver_id} (username: {receiver_username}).")
                     
                     await self.channel_layer.group_send(
                         recipient_channel_name,
@@ -149,16 +137,13 @@ class GlobalConsumer(AsyncWebsocketConsumer):
                         }
                     )
                     
-                    print(f"GlobalConsumer: Game request sent to channel {recipient_channel_name}.")
             except User.DoesNotExist:
-                print(f"GlobalConsumer: User with username {receiver_username} does not exist.")
                 GlobalConsumer.is_game_in_progress = False
         elif response:
             # Handle game response
             original_sender_id = data.get('receiver_id')
             sender_channel_name = sanitize_group_name(f"user_{original_sender_id}")
             
-            print(f"GlobalConsumer: Sending game response from user {sender_id} to user {original_sender_id}.")
             
             await self.channel_layer.group_send(
                 sender_channel_name,
@@ -171,14 +156,12 @@ class GlobalConsumer(AsyncWebsocketConsumer):
 
             GlobalConsumer.is_game_in_progress = False
             
-            print(f"GlobalConsumer: Game response sent to channel {sender_channel_name}. Game status reset.")
 
     async def game_request(self, event):
         game_request = event['game_request']
         sender_id = event['sender_id']
         sender_username = event['sender_username']
 
-        print(f"GlobalConsumer: Handling game request from {sender_username} (ID: {sender_id}): {game_request}")
 
         await self.send(text_data=json.dumps({
             'type': 'game_request',
@@ -191,7 +174,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         response = event['response']
         responder_username = event['responder_username']
 
-        print(f"GlobalConsumer: Handling game response: {response} by {responder_username}")
 
         await self.send(text_data=json.dumps({
             'type': 'game_response',
@@ -208,9 +190,6 @@ class GlobalConsumer(AsyncWebsocketConsumer):
         }))
 
     async def friend_status_update(self, event):
-        print("Updating status")
-        print(event['username'])
-        print(event['status'])
         if event['status'] == 'available':
             GlobalConsumer.is_game_in_progress = False
         await self.send(text_data=json.dumps({
@@ -228,21 +207,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = sanitize_group_name(''.join(sorted([self.user, self.friend])))
         self.room_group_name = f'chat_{self.room_name}'
 
-        print(f"User {self.user} connecting to chat room: {self.room_group_name}")
 
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
         await self.accept()
-        print(f"User {self.user} connected to chat room: {self.room_group_name}")
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
-        print(f"User {self.user} disconnected from chat room: {self.room_group_name}")
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -250,7 +226,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_username = self.user
         receiver_username = self.friend
 
-        print(f"Received message from {sender_username} to {receiver_username}: {message}")
 
         sender = await sync_to_async(User.objects.get)(username=sender_username)
         receiver = await sync_to_async(User.objects.get)(username=receiver_username)
@@ -259,7 +234,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_instance = await sync_to_async(Message.objects.create)(
             sender=sender, receiver=receiver, content=message, blocked=is_blocked
         )
-        print(f"Message saved to database from {sender_username} to {receiver_username}: {message}")
         if not is_blocked:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -269,12 +243,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'sender': sender_username,
                 }
             )
-            print(f"Message sent to chat room group {self.room_group_name}")
 
             recipient_channel_name = sanitize_group_name(f"user_{receiver.id}")
-            print(f"Recipient channel name: {recipient_channel_name}")
 
-            print(f"Attempting to send notification to channel: {recipient_channel_name}")
             await self.channel_layer.group_send(
                 recipient_channel_name,
                 {
@@ -282,21 +253,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': message,
                 }
             )
-            print(f"Notification sent to user-specific channel {recipient_channel_name}")
         else:
-            print(f"Notification and message delivery skipped because {sender_username} is blocked by {receiver_username}")
-
+            print("...")
     async def chat_message(self, event):
         message = event['message']
         sender = event['sender']
 
-        print(f"Broadcasting message from {sender}: {message}")
 
         await self.send(text_data=json.dumps({
             'message': message,
             'sender': sender,
         }))
-        print(f"Message sent to WebSocket from {sender}: {message}")
 
 class Player:
     def __init__(self, username, side):
@@ -364,11 +331,7 @@ class GameManager:
 
     @classmethod
     def reset_last_game(cls, room_name):
-        print(f"IN RESET {room_name}")
-        print(cls.games)
-        print(room_name in cls.games)
         if room_name in cls.games:
-            print("IN IF RESET")
             game = cls.games[room_name]
             game.reset()
             
@@ -378,7 +341,6 @@ class GameManager:
 
             cls.players_in_rooms[room_name].clear()
 
-            print(f"Game in room '{room_name}' has been reset. Players cleared from the room.")
 
     @classmethod
     def remove_player(cls, room_name, username):
@@ -450,7 +412,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send_ready_signal()
 
     async def wait_for_users(self):
-        print(f"[DEBUG] Waiting for both users to connect in room: {self.room_group_name}")
 
         start_time = asyncio.get_event_loop().time()
         timeout_duration = 5
@@ -460,7 +421,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             elapsed_time = current_time - start_time
             
             if elapsed_time > timeout_duration:
-                print(f"[DEBUG] Timeout reached. Disconnecting user: {self.user}")
                 await self.disconnect()
                 self.game.game_running = False
                 
@@ -469,7 +429,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             await asyncio.sleep(1)
 
     async def send_ready_signal(self):
-        print(f"Requesting ready signal for {self.user}")
         await self.send(text_data=json.dumps({
             'type': 'request_ready',
         }))
@@ -508,7 +467,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         data['side'] = self.side
 
         if data['type'] == 'player_ready':
-            print(f"{self.user} READY?")
             GameManager.mark_player_ready(self.room_group_name, self.user)
 
             if GameManager.both_ready(self.room_group_name):
@@ -521,7 +479,6 @@ class GameConsumer(AsyncWebsocketConsumer):
 
                 if not self.game.game_running:
                     self.game.start()
-                    print(f"RUNING THE GAME {self.user}")
                     self.game.set_update_callback(self.send_game_state)
                     self.game.set_score_update_callback(self.send_score_update)
                     self.game.set_end_game_callback(self.send_game_over)
@@ -564,7 +521,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         }
 
-        print(message)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -577,7 +533,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.game.game_running:
             self.game.game_running = False
             remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
-            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
             
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -594,7 +549,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not self.game.game_running and score1:
             self.game.game_running = False
             remaining_player = self.players['left'].username if self.players['right'].username == self.user else self.players['right'].username
-            print(f"[DEBUG] Notifying {remaining_player} that the game will not be counted.")
             
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -607,7 +561,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
-        print("Calling reset!!!")
         GameManager.reset_last_game(self.room_group_name)
         user_obj = await database_sync_to_async(User.objects.get)(username=self.user)
         friend_user_obj = await database_sync_to_async(User.objects.get)(username=self.friend)
@@ -615,7 +568,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         await database_sync_to_async(update_status_and_notify_friends)(user_obj, 'available')
         await database_sync_to_async(update_status_and_notify_friends)(friend_user_obj, 'available')
 
-        print(f"User {self.user} disconnecting from game room: {self.room_name}")
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -625,21 +577,17 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def save_game_if_necessary(self):
         is_game_saved = cache.get(self.cache_key)
 
-        print(f"{self.players['left'].username} : {self.players['left']. winner} or {self.players['right'].username} : {self.players['right']. winner}" )
         
-        print(f"[DEBUG] Checking if game save is necessary. Game saved: {is_game_saved}")
         
         if not is_game_saved:
             if self.players['left'].score == 0 and self.players['right'].score == 0:
-                print(f"[DEBUG] Both players have a score of 0. Skipping game record creation for game: {self.room_name}")
+                print("...")
             else:
                 cache.set(self.cache_key, True, None)
-                print(f"[DEBUG] Setting cache key {self.cache_key}")
 
                 winner_username = self.players['left'].username if self.players['left'].winner else self.players['right'].username
                 winner = await database_sync_to_async(User.objects.get)(username=winner_username)
 
-                print(f"[DEBUG] Saving game history for {self.room_name}")
                 game_record = await database_sync_to_async(GameHistory.objects.create)(
                     player1=await database_sync_to_async(User.objects.get)(username=self.players['left'].username),
                     player2=await database_sync_to_async(User.objects.get)(username=self.players['right'].username),
@@ -647,11 +595,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                     score_player2=self.players['right'].score,
                     winner=winner
                 )
-                print(f"[DEBUG] Game record created with ID: {game_record.id}")
-                print("Game Record:", game_record)
 
     async def game_cancelled_message(self, event):
-        print("HERE SENDING MESSAGE")
         message = event['message']
         await self.send(text_data=json.dumps(message))
 
@@ -660,7 +605,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         game_completed_key = f"{self.cache_key}_game_completed"
         
         cache.set(game_completed_key, True, None)
-        print(f"[DEBUG] Game marked as completed for {self.room_name}")
         
         await self.save_game_if_necessary()
 
@@ -669,7 +613,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             message = event['message']
             await self.send(text_data=json.dumps(message))
         except Exception as event:
-            print(f"WebSocket is already disconnected, cannot send message.{event}")
+            print(f"{event}")
 
 
     async def send_game_over(self, winner_side):
@@ -680,7 +624,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif winner_side == 'right':
             winner_username = self.players['right'].username
             self.players['right'].winner = 1
-        print(f"[DEBUG] send_game_over called by {self.user}. Winner: {winner_username}")
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -697,6 +640,5 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def game_over_message(self, event):
         message = event['message']
 
-        print(f"[DEBUG] game_over_message called. Message: {message}")
 
         await self.send(text_data=json.dumps(message))

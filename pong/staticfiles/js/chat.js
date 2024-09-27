@@ -12,7 +12,6 @@ async function openChatBox(friend, globApp) {
     const blockStatus = await checkBlockStatus(friend);
     
     if (!chatBox) {
-        console.log("CREATING CHAT BOX: ", blockStatus);
         chatBox = createChatBox(friend, globApp, blockStatus);
     }
 
@@ -37,7 +36,6 @@ async function openChatBox(friend, globApp) {
 async function checkBlockStatus(friend) {
     const response = await fetch(`/api/check-block-status/${friend}/`);
     const data = await response.json();
-    console.log("HEREEEEEE: ", data.hasBlocked);
     return data.hasBlocked;
 }
 
@@ -94,7 +92,6 @@ function createChatBox(friend, globApp, blockStatus = false) {
     blockOption.className = 'dropdown-option';
 
     if (blockStatus) {
-        console.log()
         blockOption.innerText = 'Unblock';
     } else {
         blockOption.innerText = 'Block';
@@ -176,7 +173,6 @@ async function viewProfile(friend) {
         profileBox = document.createElement('div');
         profileBox.id = 'profileBox';
         profileBox.className = 'profile-box';
-        console.log(profileBox);
         mainP.appendChild(profileBox);
     }
     await ensureValidAccessToken();
@@ -324,8 +320,6 @@ async function viewProfile(friend) {
 function playGame(friend, globApp) {
     let dropMen = document.getElementById('dropdownMenu');
     dropMen.style.display = 'none';
-    console.log("GAME REQ SENT");
-    console.log(globApp);
     globApp.sendGameRequest(friend, 'Do you want to play a game?');
 }
 
@@ -341,7 +335,6 @@ async function fetchMessages(friend) {
     messagesContainer.innerHTML = '';
 
 
-    console.log(messages);
     messages.forEach(message => {
         const messageElement = document.createElement('div');
         if (message.sender === friend) {
@@ -368,7 +361,6 @@ async function sendMessage(friend) {
     };
 
     if (chatSockets[friend]) {
-        console.log("HEEEEEEEWWWWWWWWWW");
         chatSockets[friend].send(JSON.stringify({
             'message': messageContent
         }));
@@ -390,7 +382,6 @@ async function sendMessage(friend) {
             return response.json();
         })
         .then(data => {
-            console.log('Message sent:', data);
             input.value = '';
         })
         .catch(error => console.error('Error sending message:', error));
@@ -403,14 +394,12 @@ function establishWebSocketConnection(friend) {
     const socket = new WebSocket(`wss://${window.location.host}/wss/chat/${friend}/`);
 
     socket.onopen = function(event) {
-        console.log('WebSocket connection opened:', event);
     };
 
     socket.onmessage = function(event) {
         const data = JSON.parse(event.data);
         const message = data['message'];
         const sender = data['sender'];
-        console.log('Message received:', data);
         displayIncomingMessage(friend, message, sender);
 
         if (document.hidden || !chatBoxVisible(friend)) {
@@ -420,7 +409,6 @@ function establishWebSocketConnection(friend) {
 
 
     socket.onclose = function(event) {
-        console.log('WebSocket connection closed:', event);
         delete chatSockets[friend];
     };
 

@@ -33,7 +33,6 @@ function displayFriendsList(friendsList, gameApp) {
 		return;
 	}
 
-	console.log("CCCCCCCC0");
 	friendsList.forEach(friend => {
 		const friendItem = document.createElement('li');
 		friendItem.textContent = friend.username;

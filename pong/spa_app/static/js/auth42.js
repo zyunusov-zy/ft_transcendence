@@ -1,7 +1,6 @@
 async function Auth42()
 {
 	try {
-		console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
         const response = await fetch('/api/oauth/config/');
         const config = await response.json();
         
@@ -30,7 +29,6 @@ async function refreshAccessToken() {
         const data = await response.json();
         
         if (data.success) {
-            console.log("Token refreshed successfully");
             return true; // Return true indicating successful refresh
         } else {
             console.error("Failed to refresh token", data.message);
@@ -75,7 +73,6 @@ function isAccessTokenExpired() {
 // Function to handle refreshing the access token if it is expired before making API calls
 async function ensureValidAccessToken() {
     if (isAccessTokenExpired()) {
-        console.log('Access token expired. Attempting to refresh...');
         const refreshed = await refreshAccessToken();
         if (!refreshed) {
             throw new Error('Failed to refresh access token');
