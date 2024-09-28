@@ -461,10 +461,10 @@ function initializeHome() {
 }
 
 
-function fetch2fa(extraInputField, submitExtraInput)
+async function fetch2fa(extraInputField, submitExtraInput)
 {
     const messageDiv = document.getElementById('error-message');
-
+    await ensureValidAccessToken();
     fetch('/enable-2fa/', {
         method: 'POST',
         headers: {
@@ -485,7 +485,7 @@ function fetch2fa(extraInputField, submitExtraInput)
     });
 
     const extraIn = document.getElementById('extraInput');
-    submitExtraInput.addEventListener('click', function(e) {
+    submitExtraInput.addEventListener('click', async function(e) {
         e.preventDefault();
         
         const code = extraIn.value.trim(); 
@@ -494,7 +494,7 @@ function fetch2fa(extraInputField, submitExtraInput)
             messageDiv.textContent = 'Please enter the 2FA code.';
             return;
         }
-    
+        await ensureValidAccessToken();
         fetch('/verify-2fa/', {
             method: 'POST',
             headers: {
@@ -518,8 +518,10 @@ function fetch2fa(extraInputField, submitExtraInput)
     });
 }
 
-function fetchDisable2fa(extraInputField, submitExtraInput) {
+async function fetchDisable2fa(extraInputField, submitExtraInput) {
     const messageDiv = document.getElementById('error-message');
+
+    await ensureValidAccessToken();
 
     fetch('/request-disable-2fa-code/', {
         method: 'POST',
@@ -542,7 +544,7 @@ function fetchDisable2fa(extraInputField, submitExtraInput) {
     });
 
     const extraIn = document.getElementById('extraInput');
-    submitExtraInput.addEventListener('click', function(e) {
+    submitExtraInput.addEventListener('click', async function(e) {
         e.preventDefault();
 
         const code = extraIn.value.trim();
@@ -551,7 +553,7 @@ function fetchDisable2fa(extraInputField, submitExtraInput) {
             messageDiv.textContent = 'Please enter the 2FA disable code.';
             return;
         }
-
+        await ensureValidAccessToken();
         fetch('/verify-disable-2fa/', {
             method: 'POST',
             headers: {

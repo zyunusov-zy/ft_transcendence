@@ -42,28 +42,25 @@ from django.utils import timezone
 @method_decorator(csrf_exempt, name='dispatch')
 class TokenRefreshView(View):
     def post(self, request):
-        # Get the refresh token from cookies
         refresh_token = request.COOKIES.get('refresh_token')
         
         if not refresh_token:
             return JsonResponse({'success': False, 'message': 'No refresh token provided'}, status=400)
 
         try:
-            # Create a RefreshToken instance and get a new access token
             refresh = RefreshToken(refresh_token)
             new_access_token = str(refresh.access_token)
 
             response = JsonResponse({'success': True})
 
-            # Set the new access token in the cookies with the proper lifetime
             access_token_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
 
             response.set_cookie(
                 'access_token',
                 new_access_token,
                 httponly=True,
-                secure=True,  # Should be enabled in production (HTTPS)
-                samesite='Strict',  # Stronger CSRF protection
+                secure=True,
+                samesite='Strict',
                 max_age=access_token_lifetime
             )
 
@@ -80,6 +77,7 @@ class BaseTemplateView(View):
         return render(request, self.template_name, context)
 
 class Enable2FAView(View):
+    @jwt_required
     def post(self, request):
         user = request.user
         user_profile = UserProfile.objects.get(user=user)
@@ -105,6 +103,7 @@ class Enable2FAView(View):
             return JsonResponse({'success': False, 'errors': f'Error sending 2FA code: {str(e)}'})
 
 class Get2FAStatusView(LoginRequiredMixin, View):
+    @jwt_required
     def get(self, request, *args, **kwargs):
         user_profile = UserProfile.objects.get(user=request.user)
 
@@ -116,6 +115,7 @@ class Get2FAStatusView(LoginRequiredMixin, View):
         })
 
 class Verify2FAView(View):
+    @jwt_required
     def post(self, request):
         user = request.user
         user_profile = UserProfile.objects.get(user=user)
@@ -204,6 +204,7 @@ class Verify2FALView(View):
             return JsonResponse({'success': False, 'errors': 'Invalid JSON format.'}, status=400)
 
 class RequestDisable2FACodeView(View):
+    @jwt_required
     def post(self, request):
         user = request.user
         user_profile = UserProfile.objects.get(user=user)
@@ -228,6 +229,7 @@ class RequestDisable2FACodeView(View):
             return JsonResponse({'success': False, 'errors': f'Error sending disable 2FA code: {str(e)}'})
 
 class VerifyDisable2FAView(View):
+    @jwt_required
     def post(self, request):
         user = request.user
         user_profile = UserProfile.objects.get(user=user)
