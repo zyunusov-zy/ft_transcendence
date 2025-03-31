@@ -16,7 +16,7 @@
 - Docker support for easy deployment
 
 ## Tech Stack
-- **Frontend:** React, TailwindCSS
+- **Frontend:** vanillaJS, CSS, Bootstrap
 - **Backend:** Django, Django Channels (for WebSockets)
 - **Database:** PostgreSQL
 - **Real-time Communication:** WebSockets
